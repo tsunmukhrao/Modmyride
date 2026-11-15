@@ -23,9 +23,12 @@ export function AuthForm({ initialMode = 'signin', notice = '', redirectTo = '/'
       if (mode === 'signin') {
         const parsed = loginSchema.safeParse({ email: form.get('email'), password: form.get('password') });
         if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? 'Check your details.');
-        const { error: authError } = await supabase.auth.signInWithPassword(parsed.data);
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword(parsed.data);
         if (authError) throw new Error('Email or password is incorrect.');
-        const identity = await fetch('/api/auth/me', { cache: 'no-store' });
+        const identity = await fetch('/api/auth/me', {
+          cache: 'no-store',
+          headers: { Authorization: `Bearer ${authData.session.access_token}` },
+        });
         const profile = identity.ok ? await identity.json() : null;
         router.replace(profile?.role === 'admin' ? '/admin' : safeReturnPath(redirectTo) ?? '/'); router.refresh(); return;
       }

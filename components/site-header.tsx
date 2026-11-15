@@ -7,6 +7,7 @@ import { buildCollectionSearchHref } from '../lib/search-url';
 import { useCart } from './cart-provider';
 import { CartDrawer } from './cart-drawer';
 import { getSupabaseBrowser } from '../lib/supabase';
+import type { Session } from '@supabase/supabase-js';
 
 const links = [
   { id: 'shop', label: 'Collection', href: '/collection' },
@@ -27,20 +28,23 @@ export function SiteHeader() {
     const supabase = getSupabaseBrowser();
     if (!supabase) return;
     let active = true;
-    const syncIdentity = async (signedIn: boolean) => {
-      setIsSignedIn(signedIn);
-      if (!signedIn) { setIsAdmin(false); return; }
+    const syncIdentity = async (session: Session | null) => {
+      setIsSignedIn(Boolean(session));
+      if (!session) { setIsAdmin(false); return; }
       try {
-        const response = await fetch('/api/auth/me', { cache: 'no-store' });
+        const response = await fetch('/api/auth/me', {
+          cache: 'no-store',
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
         const identity = response.ok ? await response.json() as { role?: string } : null;
         if (active) setIsAdmin(identity?.role === 'admin');
       } catch {
         if (active) setIsAdmin(false);
       }
     };
-    void supabase.auth.getSession().then(({ data }) => syncIdentity(Boolean(data.session)));
+    void supabase.auth.getSession().then(({ data }) => syncIdentity(data.session));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      void syncIdentity(Boolean(session));
+      void syncIdentity(session);
     });
     return () => { active = false; subscription.unsubscribe(); };
   }, []);
