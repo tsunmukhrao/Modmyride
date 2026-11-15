@@ -1,0 +1,57 @@
+/* Spacious, overflow-safe catalog controls at every viewport size. */
+.catalog-layout {
+  grid-template-columns: minmax(260px, 310px) minmax(0, 1fr);
+  gap: clamp(22px, 3.5vw, 48px);
+  align-items: start;
+}
+
+.filter-panel { min-width: 0; width: 100%; padding: 0; }
+.filter-panel-body { min-width: 0; }
+.filter-panel-body > label { min-width: 0; }
+.filter-panel-body select,
+.filter-panel-body input:not([type="checkbox"]) { width: 100%; min-width: 0; }
+.keyword-search { min-width: 0; }
+.catalog-results,
+.catalog-results .product-grid,
+.catalog-results .product-card { min-width: 0; }
+.fitment-panel .select-row { display: block; }
+.fitment-panel .fitment-cta { width: 100%; justify-content: center; min-height: 54px; }
+
+@media (max-width: 900px) {
+  .catalog-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 26px;
+    padding: 48px clamp(20px, 5vw, 56px);
+  }
+  .filter-panel-body {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 18px;
+    align-items: end;
+  }
+  .filter-panel-body > .keyword-search,
+  .filter-panel-body > .search-note { grid-column: 1 / -1; }
+  .filter-panel-body > .stock-filter { grid-column: 1 / -1; justify-self: start; }
+  .filter-panel-body > label { margin: 10px 0 14px; }
+}
+
+@media (max-width: 560px) {
+  .catalog-layout { padding: 34px 18px; }
+  .filter-panel > summary { gap: 6px; }
+  .filter-panel-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding: 0 16px 18px;
+  }
+  .filter-panel-body > .keyword-search,
+  .filter-panel-body > .search-note,
+  .filter-panel-body > .stock-filter { grid-column: auto; }
+  .filter-panel-body .keyword-search { margin: 16px 0 12px; }
+  .filter-panel-body .keyword-search input { padding-inline: 12px; font-size: 12px; }
+  .filter-panel-body .keyword-search button { padding-inline: 12px; white-space: nowrap; }
+  .filter-panel-body > label { margin: 11px 0; }
+  .filter-panel-body select,
+  .filter-panel-body input:not([type="checkbox"]) { min-height: 44px; }
+  .results-head > label { gap: 10px; }
+  .results-head select { min-width: 0; }
+}

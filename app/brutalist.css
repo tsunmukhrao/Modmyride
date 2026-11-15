@@ -1,0 +1,35 @@
+/* Brutalist garage layer: hard edges and exposed structure, softened by aerodynamic radii. */
+.nav{border-bottom:2px solid var(--gold)}
+.hero{border-bottom:2px solid var(--gold);align-items:flex-start}
+.hero-copy{max-width:720px}
+.hero h1{font-weight:700;text-transform:uppercase;text-shadow:7px 7px 0 rgba(15,59,89,.8)}
+.hero h1 em{display:inline-block;transform:skewX(-8deg);text-shadow:7px 7px 0 rgba(62,37,30,.8)}
+.hero-text{border-left:4px solid var(--gold);padding-left:18px}
+.hero-data span{border-top:1px solid var(--steel);padding-top:9px}
+.hero-data a{color:var(--muted);border-top:1px solid var(--steel);padding-top:9px;transition:color .2s ease}.hero-data a:hover{color:var(--gold)}.hero-data a strong{display:block}
+.button{border:2px solid var(--gold);border-radius:999px;transition:transform .2s ease,background .2s ease}
+.button:hover{background:var(--cream);transform:translateY(-3px) rotate(-1deg)}
+.hero-visual{margin-top:-2vw;border:0;border-radius:48% 52% 40% 60% / 56% 42% 58% 44%;background:transparent;box-shadow:none;overflow:visible}
+.hero-visual{position:absolute;right:6vw;top:92px;width:min(52vw,650px);height:560px}
+.hero-scene{overflow:hidden;border-radius:28px;border:0;background:radial-gradient(ellipse 58% 46% at 54% 66%,rgba(38,93,119,.58) 0%,rgba(15,59,89,.28) 36%,rgba(7,19,29,0) 74%);box-shadow:none;isolation:isolate}
+.hero-controls{position:absolute;left:22px;bottom:22px;z-index:3;display:flex;gap:6px;align-items:center}.hero-controls button{border:1px solid rgba(125,146,158,.55);background:rgba(7,19,29,.72);color:var(--ink);padding:8px 10px;font:10px 'DM Mono';cursor:pointer;backdrop-filter:blur(8px)}.hero-controls button:hover{border-color:var(--gold);color:var(--gold)}
+.hero-label{border:2px solid var(--gold);border-radius:999px}
+.hero-tag{border-left:0;border-right:4px solid var(--gold);padding:0 13px 0 0;text-align:right}
+.ticker{border-block:2px solid var(--gold);font-weight:500}
+.section{border-bottom:1px solid var(--line)}
+.section-heading h2,.fitment h2,.assistant h2{font-weight:700;text-transform:uppercase}
+.product-card{border:1px solid var(--line);padding:10px;background:#081722;border-radius:20px 20px 4px 4px;transition:transform .25s ease,border-color .25s ease}
+.product-card:hover{transform:translateY(-8px);border-color:var(--gold)}
+.product-art{height:285px;border-radius:14px 14px 2px 2px;border:1px solid rgba(125,146,158,.3)}
+.product-art{position:relative;overflow:hidden;background:#0d202d}.product-art:before{display:none}.product-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:1;transition:transform .4s ease,opacity .3s ease}.product-card:hover .product-art img{transform:scale(1.04);opacity:1}.product-art>span,.product-art>div{position:relative;z-index:1;text-shadow:0 2px 12px rgba(0,0,0,.9)}
+.product-meta{padding:0 5px}.card-desc{padding:0 5px 7px}
+.fitment{border-bottom:2px solid var(--gold);border-radius:0 0 70px 0}
+.fitment-panel{border:1px solid var(--steel);border-radius:26px;padding:24px;background:rgba(7,19,29,.22)}
+.select-row select{border-radius:999px}.select-row .button{border-color:#07131d}
+.assistant{border-bottom:2px solid var(--gold)}
+.assistant h2{max-width:550px}
+.chat-box{border:2px solid var(--steel);border-radius:24px 4px 24px 4px}
+.suggestions button{border-radius:999px}.suggestions button:hover{border-color:var(--gold);color:var(--gold)}
+footer{border-top:2px solid var(--gold)}
+@media (prefers-reduced-motion: reduce){.button,.product-card{transition:none}.button:hover,.product-card:hover{transform:none}}
+@media(max-width:800px){.hero{min-height:790px;display:block}.hero-copy{z-index:2}.hero-visual{position:absolute;right:0;top:92px;width:100%;height:610px;margin:0;opacity:.7;z-index:1}.hero-scene{border-radius:24px;background:radial-gradient(ellipse at 55% 65%,rgba(15,59,89,.26),transparent 55%)}.hero-text{max-width:410px;background:rgba(7,19,29,.52);padding-right:14px}.hero-data{position:relative;margin-top:430px}.hero-tag{bottom:12%;right:5%}}

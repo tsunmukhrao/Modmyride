@@ -1,0 +1,11 @@
+.related-products{margin-top:72px;padding-top:30px;border-top:1px solid var(--line)}
+.related-products h2{margin:8px 0;font-size:clamp(28px,4vw,46px);letter-spacing:-.06em}
+.related-products>.related-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:24px}
+.related-card{display:flex;min-height:180px;flex-direction:column;align-items:flex-start;padding:20px;border:1px solid var(--line);background:linear-gradient(145deg,rgba(19,54,75,.7),rgba(7,19,29,.55));transition:transform .2s ease,border-color .2s ease}
+.related-card:hover{transform:translateY(-3px);border-color:var(--gold)}
+.related-card span,.related-card em{color:var(--gold);font:10px 'DM Mono';font-style:normal;letter-spacing:.08em}
+.related-card h3{margin:20px 0 8px;font-size:18px}
+.related-card strong{margin-top:auto}
+.related-card em{margin-top:14px}
+@media(max-width:850px){.related-products>.related-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:500px){.related-products>.related-grid{grid-template-columns:1fr}}

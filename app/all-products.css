@@ -1,0 +1,2 @@
+.all-products-action{display:inline-flex;align-items:center;justify-content:center;margin:10px 3px 2px 0;padding:11px 17px;border:1px solid var(--gold);border-radius:999px;background:transparent;color:var(--gold);font:10px 'DM Mono';letter-spacing:.08em;cursor:pointer;transition:background .2s ease,color .2s ease}
+.all-products-action:hover,.all-products-action:focus-visible{background:var(--gold);color:#07131d;outline:none}
