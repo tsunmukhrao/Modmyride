@@ -7,6 +7,7 @@ import { RecentlyViewed } from '../../../components/recently-viewed';
 import { ProductBundles } from '../../../components/product-bundles';
 import { backendServerFetch } from '../../../lib/backend-api.server';
 import type { Product } from '../../../lib/catalog';
+import { getLocalProductDetail } from '../../../lib/product-detail';
 import './product.css';
 
 export const dynamic = 'force-dynamic';
@@ -15,9 +16,11 @@ type ProductDetail = Product & { specifications: Record<string, string>; gallery
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const response = await backendServerFetch(`/api/products/${encodeURIComponent(id)}`);
+  const localProduct = getLocalProductDetail(id);
+  const productIdentifier = localProduct?.sku ?? id;
+  const response = await backendServerFetch(`/api/products/${encodeURIComponent(productIdentifier)}`);
   const payload = response?.ok ? await response.json() as { product?: ProductDetail } : null;
-  const product = payload?.product;
+  const product = payload?.product ?? localProduct;
   if (!product) notFound();
 
   const specifications = Object.entries(product.specifications);

@@ -1,8 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_PRODUCTS_PAGE_SIZE, buildKnowledgeText, getSearchSuggestions, products, searchProducts } from './catalog';
 import { additionalParts } from './imported-parts';
+import { getLocalProductDetail } from './product-detail';
 
 describe('catalog retrieval', () => {
+  it('resolves every product by its storefront id or SKU and provides a detail description', () => {
+    for (const product of products) {
+      expect(getLocalProductDetail(product.id)?.description.trim()).toBeTruthy();
+      expect(getLocalProductDetail(product.sku)?.sku).toBe(product.sku);
+    }
+  });
+
+  it('returns no local detail for an unknown product identifier', () => {
+    expect(getLocalProductDetail('not-a-real-product')).toBeNull();
+  });
+
   it('includes at least 50 additional sourced parts across universal and vehicle-specific fitments', () => {
     expect(additionalParts).toHaveLength(50);
     expect(additionalParts.filter((part) => part.tags.includes('universal'))).toHaveLength(25);

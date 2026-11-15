@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -47,12 +48,17 @@ def _detail(row: dict[str, Any], client: Any) -> dict[str, Any]:
 
 
 def _get_active_product(client: Any, product_id: str) -> dict[str, Any] | None:
+    try:
+        UUID(product_id)
+        identifier_column = "id"
+    except (ValueError, TypeError, AttributeError):
+        identifier_column = "sku"
     response = (
         client.table("products")
         .select(DETAIL_COLUMNS)
-        .eq("id", product_id)
         .eq("status", "active")
         .is_("deleted_at", "null")
+        .eq(identifier_column, product_id)
         .limit(1)
         .execute()
     )
@@ -93,7 +99,8 @@ def _format_product_bundles(rows: list[dict[str, Any]], current_product_id: str,
 def get_product(product_id: str, client: Any = Depends(get_supabase)):
     try:
         row = _get_active_product(client, product_id)
-        variants = client.table("product_variants").select("id,sku,options,price,quantity,reserved").eq("product_id", product_id).eq("active", True).order("sku").execute().data or [] if row else []
+        database_product_id = str(row.get("id", product_id)) if row else product_id
+        variants = client.table("product_variants").select("id,sku,options,price,quantity,reserved").eq("product_id", database_product_id).eq("active", True).order("sku").execute().data or [] if row else []
     except Exception as exc:
         raise HTTPException(status_code=503, detail="Product details are temporarily unavailable.") from exc
     if row is None:
@@ -101,11 +108,11 @@ def get_product(product_id: str, client: Any = Depends(get_supabase)):
     product = _detail(row, client)
     product["variants"] = [{"id": str(item["id"]), "sku": item["sku"], "options": item.get("options") or {}, "price": float(item["price"]), "inStock": int(item.get("quantity", 0)) > int(item.get("reserved", 0))} for item in variants]
     try:
-        member_rows = client.table("bundle_items").select("bundle_id").eq("product_id", product_id).execute().data or []
+        member_rows = client.table("bundle_items").select("bundle_id").eq("product_id", database_product_id).execute().data or []
         bundle_ids = list(dict.fromkeys(str(item["bundle_id"]) for item in member_rows))
         bundle_rows = client.table("bundle_items").select("bundle_id,quantity,product_bundles(id,title,description,discount_percent),products(id,sku,name,price,image,status,deleted_at,in_stock,inventory(quantity,reserved),product_variants(id,options,price,quantity,reserved,active),product_compatibility(vehicles(make,model)))").in_("bundle_id", bundle_ids).execute().data or [] if bundle_ids else []
         vehicle_labels = {f"{(item.get('vehicles') or {}).get('make', '')} {(item.get('vehicles') or {}).get('model', '')}".strip().casefold() for item in row.get("product_compatibility", [])}
-        product["bundles"] = _format_product_bundles(bundle_rows, product_id, vehicle_labels)
+        product["bundles"] = _format_product_bundles(bundle_rows, database_product_id, vehicle_labels)
     except Exception as exc:
         raise HTTPException(status_code=503, detail="Product bundles are temporarily unavailable.") from exc
     return {"product": product}
