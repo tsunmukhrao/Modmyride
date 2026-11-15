@@ -48,7 +48,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
       </> : <>
         <p className="eyebrow">GARAGE / YOUR PROFILE</p>
         <h1>Make every upgrade<br /><em>fit your life.</em></h1>
-        <AuthForm initialMode={mode} notice={notice} redirectTo={params.next ?? '/'} />
+        <AuthForm initialMode={mode} notice={notice} redirectTo={params.next ?? '/account'} />
       </>}
     </section>
   </main>;

@@ -6,6 +6,7 @@ import { getCartItemCount } from '../lib/cart';
 import { buildCollectionSearchHref } from '../lib/search-url';
 import { useCart } from './cart-provider';
 import { CartDrawer } from './cart-drawer';
+import { getSupabaseBrowser } from '../lib/supabase';
 
 const links = [
   { id: 'shop', label: 'Collection', href: '/collection' },
@@ -17,8 +18,32 @@ export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [progress, setProgress] = useState(0);
   const [cartOpen, setCartOpen] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const pathname = usePathname();
   const { lines, ready } = useCart();
+
+  useEffect(() => {
+    const supabase = getSupabaseBrowser();
+    if (!supabase) return;
+    let active = true;
+    const syncIdentity = async (signedIn: boolean) => {
+      setIsSignedIn(signedIn);
+      if (!signedIn) { setIsAdmin(false); return; }
+      try {
+        const response = await fetch('/api/auth/me', { cache: 'no-store' });
+        const identity = response.ok ? await response.json() as { role?: string } : null;
+        if (active) setIsAdmin(identity?.role === 'admin');
+      } catch {
+        if (active) setIsAdmin(false);
+      }
+    };
+    void supabase.auth.getSession().then(({ data }) => syncIdentity(Boolean(data.session)));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      void syncIdentity(Boolean(session));
+    });
+    return () => { active = false; subscription.unsubscribe(); };
+  }, []);
 
   useEffect(() => {
     const update = () => {
@@ -42,10 +67,10 @@ export function SiteHeader() {
         <button type="submit" aria-label="Search">⌕</button>
       </form>
       <div className="nav-center" aria-label="Sections">{links.map((link) => <button className={`nav-item ${active === link.id || pathname === link.href ? 'active' : ''}`} key={link.id} onClick={() => navigate(link.id, link.href)}>{link.label}<span /></button>)}</div>
-      <div className="nav-actions"><button className="header-signin cart-link" type="button" aria-label={`Open cart, ${getCartItemCount(lines)} items`} aria-expanded={cartOpen} onClick={() => setCartOpen(true)}>Cart <b>{ready ? getCartItemCount(lines) : '—'}</b></button><span className="nav-status"><i /> Online</span><a className="header-signin" href="/account">Sign in <b>↗</b></a><button className={`menu-toggle ${menuOpen ? 'open' : ''}`} aria-expanded={menuOpen} aria-controls="mobile-menu" onClick={() => setMenuOpen(!menuOpen)}><span /><span /></button></div>
+      <div className="nav-actions"><button className="header-signin cart-link" type="button" aria-label={`Open cart, ${getCartItemCount(lines)} items`} aria-expanded={cartOpen} onClick={() => setCartOpen(true)}>Cart <b>{ready ? getCartItemCount(lines) : '—'}</b></button><span className="nav-status"><i /> Online</span><a className="header-signin" href={isAdmin ? '/admin' : '/account'}>{isAdmin ? 'Admin' : isSignedIn ? 'My garage' : 'Sign in'} <b>↗</b></a><button className={`menu-toggle ${menuOpen ? 'open' : ''}`} aria-expanded={menuOpen} aria-controls="mobile-menu" onClick={() => setMenuOpen(!menuOpen)}><span /><span /></button></div>
     </nav>
     <div className="header-progress"><span style={{ width: `${progress}%` }} /></div>
     <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
-    <div className={`mobile-menu ${menuOpen ? 'open' : ''}`} id="mobile-menu"><form role="search" action="/collection" onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); window.location.href = buildCollectionSearchHref(String(form.get('q') ?? '')); }}><label className="sr-only" htmlFor="mobile-site-search">Search parts and vehicles</label><input id="mobile-site-search" name="q" type="search" placeholder="Search parts, vehicles…" /><button type="submit">Search ↗</button></form>{links.map((link, index) => <button key={link.id} onClick={() => navigate(link.id, link.href)}><small>0{index + 1}</small>{link.label}<em>↗</em></button>)}<a href="/account" onClick={() => setMenuOpen(false)}><small>04</small>Account<em>↗</em></a></div>
+    <div className={`mobile-menu ${menuOpen ? 'open' : ''}`} id="mobile-menu"><form role="search" action="/collection" onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); window.location.href = buildCollectionSearchHref(String(form.get('q') ?? '')); }}><label className="sr-only" htmlFor="mobile-site-search">Search parts and vehicles</label><input id="mobile-site-search" name="q" type="search" placeholder="Search parts, vehicles…" /><button type="submit">Search ↗</button></form>{links.map((link, index) => <button key={link.id} onClick={() => navigate(link.id, link.href)}><small>0{index + 1}</small>{link.label}<em>↗</em></button>)}<a href={isAdmin ? '/admin' : '/account'} onClick={() => setMenuOpen(false)}><small>04</small>{isAdmin ? 'Admin' : isSignedIn ? 'My garage' : 'Account'}<em>↗</em></a></div>
   </header>;
 }
