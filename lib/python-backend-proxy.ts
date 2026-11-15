@@ -33,7 +33,7 @@ export async function forwardToPython(
   const method = request.method.toUpperCase();
   const body = method === 'GET' || method === 'HEAD' ? undefined : await request.arrayBuffer();
   try {
-    const upstream = await fetcher(backend, { method, headers, body, redirect: 'manual', cache: 'no-store' });
+    const upstream = await fetcher(backend, { method, headers, body, redirect: 'follow', cache: 'no-store' });
     const responseHeaders = new Headers(upstream.headers);
     for (const name of ['content-encoding', 'content-length', 'transfer-encoding', 'connection']) responseHeaders.delete(name);
     return new Response(method === 'HEAD' || upstream.status === 204 || upstream.status === 304 ? null : upstream.body, {

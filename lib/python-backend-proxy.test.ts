@@ -9,6 +9,7 @@ describe('Python API proxy', () => {
     const [url, init] = fetcher.mock.calls[0];
     expect(String(url)).toBe('http://127.0.0.1:8000/api/admin/products?draft=1');
     expect(init?.method).toBe('POST');
+    expect(init?.redirect).toBe('follow');
     expect(new Headers(init?.headers).get('authorization')).toBe('Bearer access-token');
     expect(new Headers(init?.headers).get('cookie')).toBeNull();
     expect(await new Response(init?.body).text()).toBe('{"name":"part"}');
