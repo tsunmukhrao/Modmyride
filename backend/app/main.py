@@ -21,6 +21,7 @@ from app.payments.protocol import PaymentAdapter
 from app.payments.registry import PaymentRegistry
 from app.routes.checkout import router as checkout_router
 from app.routes.payments import router as payments_router
+from app.routes.demo_qr import router as demo_qr_router
 from app.routes.shipping import router as shipping_router
 from app.routes.invoices import router as invoices_router
 from app.routes.returns import admin_router as admin_order_requests_router
@@ -53,6 +54,7 @@ def create_app(
     application.include_router(admin_suppliers_router)
     application.include_router(checkout_router)
     application.include_router(payments_router)
+    application.include_router(demo_qr_router)
     application.include_router(shipping_router)
     application.include_router(invoices_router)
     application.include_router(returns_router)

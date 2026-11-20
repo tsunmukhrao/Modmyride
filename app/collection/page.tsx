@@ -112,7 +112,7 @@ export default function CollectionPage() {
     <div className="search-hero-footer"><span>Search by product, fitment, or SKU</span><a href="#catalog-filters">BROWSE FILTERS ↓</a></div>
   </div>;
 
-  return <PageShell eyebrow="THE COLLECTION / PARTS SEARCH" title={<>Parts with <em>presence.</em></>} intro="Search products by name, SKU, vehicle, or category. Filter to your exact car and browse upgrades that fit your drive." heroExtra={heroSearch}>
+  return <PageShell className="collection-page-shell" eyebrow="THE COLLECTION / PARTS SEARCH" title={<>Parts with <em>presence.</em></>} intro="Search products by name, SKU, vehicle, or category. Filter to your exact car and browse upgrades that fit your drive." heroExtra={heroSearch}>
     <section className="catalog-layout"><aside className="filter-panel" id="catalog-filters" aria-label="Catalog filters"><div className="filter-panel-heading"><div><span className="eyebrow">REFINE YOUR SEARCH</span><h2>Find your fit.</h2></div><span className="filter-count">{activeFilterCount ? `${activeFilterCount} ON` : 'ALL ITEMS'}</span></div>
       <div className="filter-panel-body"><div className="keyword-search"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && search()} placeholder="Part, vehicle, or SKU" aria-label="Search catalog" /><button type="button" onClick={() => search()} aria-label="Search catalog">↗</button></div>
       <div className="filter-group"><span className="filter-group-title">FITMENT</span><label>Vehicle<select value={vehicle} onChange={(event) => setVehicle(event.target.value)}><option value="">{vehiclePlaceholder}</option>{vehicleOptions}</select></label></div>

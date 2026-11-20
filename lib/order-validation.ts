@@ -7,7 +7,7 @@ const shippingSchema = z.object({
   line2: z.string().trim().max(180).optional().default(''),
   city: z.string().trim().min(2).max(100),
   region: z.string().trim().min(2).max(100),
-  postalCode: z.string().trim().min(3).max(16),
+  postalCode: z.string().trim().regex(/^[1-9][0-9]{5}$/, 'Enter a valid six-digit Indian PIN code.'),
   countryCode: z.string().trim().length(2).default('IN'),
 });
 

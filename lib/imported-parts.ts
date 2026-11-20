@@ -1,4 +1,5 @@
 import type { Product } from './catalog';
+import { getDemoProductImage } from './demo-product-images';
 
 const vehicleProducts: Array<[string, string, number, string, string, string]> = [
   ['Ford EcoSport 2013–16 7D Custom Floor Mats', 'Interior', 4990, 'Ford EcoSport', 'floor mats', '2013–2016 EcoSport fitment. Check the vehicle year and trim before ordering.'],
@@ -36,7 +37,7 @@ export const additionalParts: Product[] = vehicleProducts.map(([name, category, 
     name,
     category,
     price,
-    image: `/images/products/catalog/${sku.toLowerCase()}.svg`,
+    image: getDemoProductImage(category),
     description,
     tags: [vehicle.split(' ')[0], ...vehicle.split(' ').slice(1), productType],
     vehicles: [vehicle],

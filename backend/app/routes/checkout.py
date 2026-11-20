@@ -26,7 +26,7 @@ class ShippingAddress(BaseModel):
     line2: str = Field(default="", max_length=180)
     city: str = Field(min_length=2, max_length=100)
     region: str = Field(min_length=2, max_length=100)
-    postalCode: str = Field(min_length=3, max_length=16)
+    postalCode: str = Field(pattern=r"^[1-9][0-9]{5}$")
     countryCode: str = Field(default="IN", min_length=2, max_length=2)
 
 
