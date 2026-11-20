@@ -24,6 +24,14 @@ class Settings(BaseSettings):
     supabase_service_role_key: str | None = None
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     payment_provider: str | None = None
+    demo_payment_secret: str | None = None
+    public_app_url: str = "https://modmyride-eight.vercel.app"
+    email_smtp_host: str | None = None
+    email_smtp_port: int = 587
+    email_smtp_username: str | None = None
+    email_smtp_password: str | None = None
+    email_from_address: str | None = None
+    email_from_name: str = "MODMYRIDE"
 
 
 @lru_cache

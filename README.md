@@ -96,6 +96,8 @@ For a fresh hosted Supabase project, review and apply the migrations in the orde
 
 `render.yaml` uses `sync: false` for secrets so values are supplied in Render's dashboard and are not stored in the repository. Keep all `.env*` files except `.env.example` out of Git.
 
+Checkout supports cash on delivery and a clearly labeled demo UPI flow. The demo QR is issued only after an authenticated order is created with a delivery address and payment method; it expires after ten minutes and opens `/checkout/pay/<signed-token>`. Its Pay action records a demo payment through the server-side payment event function and does not move money. For real online payments, configure and verify a merchant payment adapter before offering it to customers. To email order details, configure the backend SMTP variables in `.env.example` on the Python API host; the sender address must be verified by the SMTP provider. `POST /api/orders` is handled by the Python API, so a 405 from the production storefront usually means Vercel's `PYTHON_BACKEND_URL` points to the wrong service/path or the Python API has not been redeployed with the checkout route; set it to the public FastAPI base URL and redeploy the API and storefront.
+
 ## Current API surface
 
 | Method and path | Purpose | Current status |

@@ -93,7 +93,7 @@ async def receive_payment_webhook(provider_name: str, request: Request):
             try:
                 orders = client.table("orders").select("id,user_id,customer_email").eq("id", order_id).limit(1).execute().data or []
                 if orders and orders[0].get("customer_email"):
-                    request.app.state.notification_service.emit(client, str(orders[0]["user_id"]), orders[0]["customer_email"], order_id, "order_paid")
+                    request.app.state.notification_service.emit(client, str(orders[0]["user_id"]), orders[0]["customer_email"], order_id, "order_paid", order_details=True)
             except Exception:
                 pass
         return {"received": True, "result": result.data}

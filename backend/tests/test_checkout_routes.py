@@ -14,6 +14,7 @@ def test_checkout_fails_closed_without_gateway_before_creating_order():
         response = client.post("/api/orders", json={
             "items": [{"productId": "20de9fee-a887-47ee-a648-9ef28de8a2e2", "quantity": 1}],
             "shipping": {"recipient": "A Singh", "phone": "9876543210", "line1": "12 MG Road", "city": "Bengaluru", "region": "Karnataka", "postalCode": "560001", "countryCode": "IN"},
+            "paymentMethod": "gateway",
             "idempotencyKey": "checkout-run-0001",
         })
 

@@ -1,4 +1,7 @@
 from typing import Any
+from email.message import EmailMessage
+import smtplib
+import ssl
 
 from app.notifications.console import DisabledNotificationProvider
 from app.notifications.protocol import NotificationProvider
@@ -13,19 +16,52 @@ MESSAGES = {
 }
 
 
-def event_message(event_type: str, order_id: str) -> tuple[str, str]:
+def event_message(event_type: str, order_id: str, details: str = "") -> tuple[str, str]:
     template = MESSAGES.get(event_type)
     if not template:
         raise ValueError("Unsupported notification event.")
-    return template[0], template[1].format(order_id=order_id)
+    return template[0], template[1].format(order_id=order_id) + (f"\n\nOrder details:\n{details}" if details else "")
+
+
+class SMTPNotificationProvider:
+    def __init__(self, host: str, port: int, username: str, password: str, sender: str, sender_name: str):
+        self.host, self.port, self.username, self.password = host, port, username, password
+        self.sender, self.sender_name = sender, sender_name
+
+    def send(self, to: str, subject: str, body: str, idempotency_key: str):
+        from app.notifications.protocol import DeliveryResult
+        message = EmailMessage()
+        message["From"] = f"{self.sender_name} <{self.sender}>"
+        message["To"] = to
+        message["Subject"] = subject
+        message["X-Idempotency-Key"] = idempotency_key
+        message.set_content(body)
+        try:
+            with smtplib.SMTP(self.host, self.port, timeout=15) as smtp:
+                smtp.starttls(context=ssl.create_default_context())
+                smtp.login(self.username, self.password)
+                smtp.send_message(message)
+            return DeliveryResult(delivered=True, message_id=message.get("Message-ID"))
+        except Exception:
+            return DeliveryResult(delivered=False, error="SMTP delivery failed.")
 
 
 class NotificationService:
     def __init__(self, provider: NotificationProvider | None = None):
         self.provider = provider or DisabledNotificationProvider()
 
-    def emit(self, client: Any, user_id: str, recipient: str, order_id: str, event_type: str) -> dict[str, str]:
-        subject, body = event_message(event_type, order_id)
+    def emit(self, client: Any, user_id: str, recipient: str, order_id: str, event_type: str, order_details: bool = False) -> dict[str, str]:
+        details = ""
+        if order_details:
+            try:
+                order = (client.table("orders").select("subtotal,discount_total,tax_total,shipping_total,total,currency").eq("id", order_id).limit(1).execute().data or [{}])[0]
+                items = client.table("order_items").select("product_snapshot,quantity,unit_price").eq("order_id", order_id).execute().data or []
+                lines = [f"- {((item.get('product_snapshot') or {}).get('name') or (item.get('product_snapshot') or {}).get('sku') or 'Product')} × {item.get('quantity')} — {order.get('currency', 'INR')} {item.get('unit_price', 0)} each" for item in items]
+                lines += [f"{label}: {order.get(key, 0)}" for label, key in (("Subtotal", "subtotal"), ("Discount", "discount_total"), ("Tax", "tax_total"), ("Shipping", "shipping_total"), ("Total", "total"))]
+                details = "\n".join(lines)
+            except Exception:
+                details = f"Order reference: {order_id}"
+        subject, body = event_message(event_type, order_id, details)
         idempotency_key = f"{order_id}:{event_type}"
         try:
             prior = client.table("order_notifications").select("status").eq("idempotency_key", idempotency_key).limit(1).execute().data or []

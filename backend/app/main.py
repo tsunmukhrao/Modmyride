@@ -26,7 +26,7 @@ from app.routes.shipping import router as shipping_router
 from app.routes.invoices import router as invoices_router
 from app.routes.returns import admin_router as admin_order_requests_router
 from app.routes.returns import router as returns_router
-from app.notifications.service import NotificationService
+from app.notifications.service import NotificationService, SMTPNotificationProvider
 
 
 def create_app(
@@ -41,7 +41,14 @@ def create_app(
     application.state.supabase = None
     application.state.supabase_client_factory = supabase_client_factory
     application.state.payment_registry = PaymentRegistry(payment_adapters)
-    application.state.notification_service = notification_service or NotificationService()
+    email_provider = None
+    if all((configured_settings.email_smtp_host, configured_settings.email_smtp_username, configured_settings.email_smtp_password, configured_settings.email_from_address)):
+        email_provider = SMTPNotificationProvider(
+            configured_settings.email_smtp_host, configured_settings.email_smtp_port,
+            configured_settings.email_smtp_username, configured_settings.email_smtp_password,
+            configured_settings.email_from_address, configured_settings.email_from_name,
+        )
+    application.state.notification_service = notification_service or NotificationService(email_provider)
     application.include_router(search_router)
     application.include_router(vehicles_router)
     application.include_router(products_router)

@@ -1,5 +1,5 @@
 import re
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -34,6 +34,7 @@ class CheckoutRequest(BaseModel):
     items: list[CheckoutItem] = Field(min_length=1, max_length=50)
     shipping: ShippingAddress
     idempotencyKey: str = Field(min_length=8, max_length=128)
+    paymentMethod: Literal["demo_upi", "cash_on_delivery", "gateway"]
     couponCode: str | None = Field(default=None, max_length=64)
 
 
@@ -46,10 +47,12 @@ async def create_order(
     if int(request.headers.get("content-length", "0") or 0) > 20_000:
         raise HTTPException(status_code=413, detail="Order request is too large.")
     settings = request.app.state.settings
-    try:
-        provider = request.app.state.payment_registry.get(settings.payment_provider)
-    except PaymentConfigurationError as exc:
-        raise HTTPException(status_code=503, detail="No payment gateway is configured; no order was created.") from exc
+    provider = None
+    if payload.paymentMethod == "gateway":
+        try:
+            provider = request.app.state.payment_registry.get(settings.payment_provider)
+        except PaymentConfigurationError as exc:
+            raise HTTPException(status_code=503, detail="No payment gateway is configured; no order was created.") from exc
 
     try:
         client = request.app.state.supabase or get_supabase(request)
@@ -78,11 +81,12 @@ async def create_order(
         amount_minor = round(float(order["total"]) * 100)
         if amount_minor < 1:
             raise HTTPException(status_code=409, detail="This order has an invalid payable amount.")
+        selected_provider = {"demo_upi": "demo_upi", "cash_on_delivery": "cash_on_delivery"}.get(payload.paymentMethod, settings.payment_provider)
         existing_result = (
             client.table("payments")
             .select("id,provider_reference,amount,currency,status")
             .eq("order_id", order_id)
-            .eq("provider", settings.payment_provider)
+            .eq("provider", selected_provider)
             .eq("status", "pending")
             .order("created_at", desc=True)
             .limit(1)
@@ -92,19 +96,23 @@ async def create_order(
         if existing:
             raise HTTPException(status_code=409, detail="A payment attempt is already pending for this order.")
         try:
-            payment_intent = await provider.create_payment(PaymentRequest(
-                order_id=order_id,
-                amount_minor=amount_minor,
-                currency=str(order["currency"]),
-            ))
+            demo_token = None
+            if payload.paymentMethod == "gateway":
+                payment_intent = await provider.create_payment(PaymentRequest(order_id=order_id, amount_minor=amount_minor, currency=str(order["currency"])))
+                payment_provider, reference, currency, method = payment_intent.provider, payment_intent.reference, payment_intent.currency, "gateway"
+                checkout_url, client_data = payment_intent.checkout_url, payment_intent.client_data or {}
+            else:
+                from app.routes.demo_qr import create_demo_token
+                payment_provider, reference, currency = selected_provider, order_id, str(order["currency"])
+                method = "upi_demo" if payload.paymentMethod == "demo_upi" else "cash_on_delivery"
+                checkout_url, client_data = None, {}
+                if payload.paymentMethod == "demo_upi":
+                    demo_token, expires = create_demo_token(request, order_id)
+                    client_data = {"demoToken": demo_token, "expiresAt": str(expires)}
             client.table("payments").insert({
-                "order_id": order_id,
-                "provider": payment_intent.provider,
-                "provider_reference": payment_intent.reference,
-                "idempotency_key": f"{order_id}:{payment_intent.provider}:{payment_intent.reference}",
-                "amount": amount_minor / 100,
-                "currency": payment_intent.currency,
-                "status": "pending",
+                "order_id": order_id, "provider": payment_provider, "provider_reference": reference,
+                "idempotency_key": f"{order_id}:{payment_provider}:{reference}", "amount": amount_minor / 100,
+                "currency": currency, "status": "pending", "method": method,
             }).execute()
         except Exception as exc:
             try:
@@ -115,16 +123,16 @@ async def create_order(
         if order["payment_status"] == "failed":
             client.table("orders").update({"payment_status": "pending"}).eq("id", order_id).eq("payment_status", "failed").execute()
         if user.get("email"):
-            request.app.state.notification_service.emit(client, user["id"], user["email"], order_id, "order_placed")
+            request.app.state.notification_service.emit(client, user["id"], user["email"], order_id, "order_placed", order_details=True)
         return {
             "orderId": order_id,
             "payment": {
-                "provider": payment_intent.provider,
-                "reference": payment_intent.reference,
-                "amount": payment_intent.amount_minor,
-                "currency": payment_intent.currency,
-                "checkoutUrl": payment_intent.checkout_url,
-                "clientData": payment_intent.client_data or {},
+                "provider": payment_provider,
+                "reference": reference,
+                "amount": amount_minor,
+                "currency": currency,
+                "checkoutUrl": checkout_url,
+                "clientData": client_data,
             },
             "status": order["payment_status"],
             "summary": {
