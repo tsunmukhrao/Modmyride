@@ -10,7 +10,6 @@ async function proxy(request: Request) {
   if (!token) {
     try {
       const supabase = await getSupabaseServer();
-      if (supabase) await supabase.auth.getUser();
       const { data } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
       token = data.session?.access_token ?? null;
     } catch {
