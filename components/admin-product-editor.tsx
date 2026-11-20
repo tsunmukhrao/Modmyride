@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { backendFetch } from '../lib/backend-api';
 
 type Option = { id: string; name: string };
 type Vehicle = { id: string; make: string; model: string; year_from: number | null; year_to: number | null };
@@ -45,7 +46,7 @@ export function AdminProductEditor({ categories, brands, vehicles, product, expa
       specifications, imageUrl: form.get('imageUrl'),
       compatibility: compatibility.map((vehicleId) => ({ vehicleId, notes: existingFitments.get(vehicleId) ?? '' })),
     };
-    const response = await fetch('/api/admin/products', {
+    const response = await backendFetch('/api/admin/products', {
       method: product ? 'PATCH' : 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
     });
     const result = await response.json().catch(() => ({}));
@@ -55,7 +56,7 @@ export function AdminProductEditor({ categories, brands, vehicles, product, expa
     if (files.length && productId) {
       const upload = new FormData();
       files.forEach((file) => upload.append('files', file));
-      const uploadResponse = await fetch(`/api/admin/products/${productId}/images`, { method: 'POST', body: upload });
+      const uploadResponse = await backendFetch(`/api/admin/products/${productId}/images`, { method: 'POST', body: upload });
       const uploadResult = await uploadResponse.json().catch(() => ({}));
       if (!uploadResponse.ok) { setBusy(false); setFeedback(`Product saved; image upload failed: ${uploadResult.error ?? 'please try again.'}`); router.refresh(); return; }
     }
@@ -68,7 +69,7 @@ export function AdminProductEditor({ categories, brands, vehicles, product, expa
     if (!product || !window.confirm(`Archive ${product.name}? It will disappear from the storefront and can be restored later.`)) return;
     setBusy(true);
     setFeedback('');
-    const response = await fetch('/api/admin/products', { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: product.id }) });
+    const response = await backendFetch('/api/admin/products', { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: product.id }) });
     const result = await response.json().catch(() => ({}));
     setBusy(false);
     if (!response.ok) { setFeedback(result.error ?? 'Could not archive this product.'); return; }
@@ -80,7 +81,7 @@ export function AdminProductEditor({ categories, brands, vehicles, product, expa
     if (!product || !window.confirm('Remove this gallery image?')) return;
     setBusy(true);
     setFeedback('');
-    const response = await fetch(`/api/admin/products/${product.id}/images`, { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ imageId }) });
+    const response = await backendFetch(`/api/admin/products/${product.id}/images`, { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ imageId }) });
     const result = await response.json().catch(() => ({}));
     setBusy(false);
     if (!response.ok) { setFeedback(result.error ?? 'Could not remove that image.'); return; }

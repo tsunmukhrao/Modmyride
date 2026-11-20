@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { backendFetch } from '../lib/backend-api';
 
 type Props = { orderId: string; status: string; paymentStatus: string };
 
@@ -26,7 +27,7 @@ export function AdminOrderUpdater({ orderId, status, paymentStatus }: Props) {
     setBusy(true);
     setMessage('');
     const form = new FormData(event.currentTarget);
-    const response = await fetch(`/api/admin/orders/${orderId}`, {
+    const response = await backendFetch(`/api/admin/orders/${orderId}`, {
       method: 'PATCH', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         status: nextStatus,

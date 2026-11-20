@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { backendFetch } from '../lib/backend-api';
 
 export type EditableCategory = { id: string; name: string; description: string; parent_id: string | null; image_url: string | null; active: boolean; sort_order: number };
 type Props = { categories: EditableCategory[] };
@@ -22,7 +23,7 @@ function CategoryForm({ categories, category }: { categories: EditableCategory[]
       parentId: form.get('parentId') || null, imageUrl: form.get('imageUrl'), active: form.get('active') === 'true',
       sortOrder: Number(form.get('sortOrder')),
     };
-    const response = await fetch('/api/admin/categories', { method: category ? 'PATCH' : 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const response = await backendFetch('/api/admin/categories', { method: category ? 'PATCH' : 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     const result = await response.json().catch(() => ({}));
     setBusy(false);
     if (!response.ok) { setMessage(result.error ?? 'Could not save this category.'); return; }
@@ -52,7 +53,7 @@ function ArchiveCategory({ categories, category }: { categories: EditableCategor
     if (!window.confirm(`Hide “${category.name}”? If it contains products or child categories, choose a reassignment target first.`)) return;
     setBusy(true);
     setMessage('');
-    const response = await fetch('/api/admin/categories', { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: category.id, ...(reassignTo ? { reassignTo } : {}) }) });
+    const response = await backendFetch('/api/admin/categories', { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: category.id, ...(reassignTo ? { reassignTo } : {}) }) });
     const result = await response.json().catch(() => ({}));
     setBusy(false);
     if (!response.ok) { setMessage(result.error ?? 'Could not archive this category.'); return; }
