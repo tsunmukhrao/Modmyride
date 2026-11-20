@@ -15,7 +15,8 @@
 .catalog-results,
 .catalog-results .product-grid,
 .catalog-results .product-card { min-width: 0; }
-.filter-panel { position:sticky; top:22px; overflow:hidden; border:1px solid rgba(125,146,158,.27); border-radius:18px; background:linear-gradient(155deg,rgba(15,38,53,.96),rgba(6,18,28,.98)); box-shadow:0 18px 48px rgba(0,0,0,.22); }
+.filter-panel { position:sticky; top:22px; height:calc(100vh - 44px); height:calc(100dvh - 44px); overflow-x:hidden; overflow-y:auto; overscroll-behavior:contain; scrollbar-gutter:stable; border:1px solid rgba(125,146,158,.27); border-radius:18px; background:linear-gradient(155deg,rgba(15,38,53,.96),rgba(6,18,28,.98)); box-shadow:0 18px 48px rgba(0,0,0,.22); }
+.catalog-results { height:calc(100vh - 44px); height:calc(100dvh - 44px); overflow-x:hidden; overflow-y:auto; overscroll-behavior:contain; scrollbar-gutter:stable; padding-right:8px; }
 .filter-panel-heading { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:21px 20px 17px; border-bottom:1px solid rgba(125,146,158,.19); }
 .filter-panel-heading>div { flex:1; min-width:0; }
 .filter-panel-heading .eyebrow { display:block; width:max-content; max-width:100%; margin:0 0 7px; font-size:9px; white-space:nowrap; letter-spacing:.12em; }
@@ -93,6 +94,8 @@
   .filter-panel-body > .stock-filter { grid-column: 1 / -1; justify-self: start; }
   .filter-panel-body > label { margin: 10px 0 14px; }
   .filter-panel { position:static; }
+  .filter-panel { height:auto; max-height:none; overflow:visible; }
+  .catalog-results { height:auto; overflow:visible; padding-right:0; }
   .filter-panel-body { padding:0 18px 18px; }
 }
 
