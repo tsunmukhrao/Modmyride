@@ -1,7 +1,7 @@
 from typing import Any
 
 import httpx
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.config import Settings, get_settings
@@ -30,12 +30,18 @@ async def verify_access_token(token: str, settings: Settings) -> dict[str, Any]:
 
 
 async def get_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     settings: Settings = Depends(get_settings),
 ) -> dict[str, Any]:
-    if credentials is None or credentials.scheme.lower() != "bearer":
+    token = (
+        credentials.credentials
+        if credentials is not None and credentials.scheme.lower() == "bearer"
+        else request.headers.get("x-supabase-access-token")
+    )
+    if not token:
         raise HTTPException(status_code=401, detail="A bearer access token is required.")
-    return await verify_access_token(credentials.credentials, settings)
+    return await verify_access_token(token, settings)
 
 
 def require_admin(

@@ -29,7 +29,14 @@ export async function forwardToPython(
   backend.search = incoming.search;
   const headers = new Headers(request.headers);
   for (const name of ['host', 'cookie', 'content-length', 'connection']) headers.delete(name);
-  if (accessToken) headers.set('authorization', `Bearer ${accessToken}`);
+  // Some upstream hosting redirects strip Authorization on the redirected
+  // request. Keep a server-to-server fallback header so the API can still
+  // authenticate the same verified Supabase session.
+  headers.delete('x-supabase-access-token');
+  if (accessToken) {
+    headers.set('authorization', `Bearer ${accessToken}`);
+    headers.set('x-supabase-access-token', accessToken);
+  }
   const method = request.method.toUpperCase();
   const body = method === 'GET' || method === 'HEAD' ? undefined : await request.arrayBuffer();
   try {
