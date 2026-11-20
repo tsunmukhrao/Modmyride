@@ -1,5 +1,9 @@
 # MODMYRIDE
 
+## Hosted admin supplier directory
+
+The ERP admin workspace adds a supplier directory. After deploying this code, apply `supabase/migrations/202611200001_admin_suppliers.sql` once in the hosted Supabase SQL Editor. The migration creates the supplier table and admin-only row policy; until it is applied, the Suppliers page will show a migration-required message. Do not expose the service-role key in the browser.
+
 Next.js App Router storefront and admin workspace with a Python FastAPI backend. The existing PHP project is separate and is not used by this app.
 
 ## Local setup

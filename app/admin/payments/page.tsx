@@ -38,9 +38,7 @@ export default async function AdminPaymentsPage({ searchParams }: PageProps) {
   if (to) exportParams.set('to', to);
   const exportHref = `/api/admin/payments/export${exportParams.size ? `?${exportParams.toString()}` : ''}`;
 
-  return <main className="account-page">
-    <nav className="nav"><a className="brand" href="/admin"><span className="brand-mark">M</span> MODMYRIDE / ADMIN</a><a className="text-link" href="/admin">← Operations</a></nav>
-    <section className="admin-shell">
+  return <section className="admin-shell">
       <p className="eyebrow">CONTROL ROOM / TRANSACTIONS</p><h1>Payment status.</h1><p className="muted">Signed in as {identity.user.email} · gateway webhooks remain the source of truth.</p>
       <form className="payment-filters" method="get"><label>Status<select name="status" defaultValue={status}><option value="">All statuses</option>{paymentStatuses.map((value) => <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>)}</select></label><label>From<input name="from" type="date" defaultValue={from} /></label><label>To<input name="to" type="date" defaultValue={to} /></label><button className="ghost" type="submit">Apply filters</button><a className="button" href={exportHref}>Export CSV ↓</a></form>
       <div className="admin-stats"><div><span className="muted">PAYMENTS SHOWN</span><strong>{payments.length}</strong></div><div><span className="muted">FAILED ATTEMPTS</span><strong>{failed}</strong></div><div><span className="muted">PAYMENT AMOUNT SHOWN</span><strong>₹{total.toLocaleString('en-IN')}</strong></div></div>
@@ -54,6 +52,5 @@ export default async function AdminPaymentsPage({ searchParams }: PageProps) {
         <strong>{payment.currency} {Number(payment.amount).toLocaleString('en-IN')}</strong>
         {payment.refunds?.length ? <div className="admin-refund-summary">{payment.refunds.map((refund, index) => <span key={`${refund.created_at}-${index}`}>Refund {refund.status}: {payment.currency} {Number(refund.amount).toLocaleString('en-IN')} · {refund.reason}</span>)}</div> : null}
       </article>) : <p className="admin-empty">No payments match these filters.</p>}</div>
-    </section>
-  </main>;
+  </section>;
 }

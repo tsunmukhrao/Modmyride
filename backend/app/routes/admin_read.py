@@ -29,6 +29,24 @@ def get_admin_dashboard(_admin: dict[str, Any] = Depends(require_admin), client:
         raise HTTPException(status_code=503, detail="Admin dashboard data is unavailable.") from exc
 
 
+@router.get("/customers")
+def list_admin_customers(query: str = Query(default="", max_length=120), _admin: dict[str, Any] = Depends(require_admin), client: Any = Depends(get_supabase)):
+    try:
+        profiles = client.table("profiles").select("id,full_name,phone,vehicle_make,vehicle_model,vehicle_year,created_at").order("created_at", desc=True).limit(200).execute().data or []
+        orders = client.table("orders").select("user_id,customer_email").not_.is_("customer_email", "null").limit(1000).execute().data or []
+        emails = {}
+        for order in orders:
+            if order.get("user_id") and order.get("customer_email"):
+                emails.setdefault(str(order["user_id"]), order["customer_email"])
+        needle = query.strip().casefold()
+        rows = [{**profile, "email": emails.get(str(profile["id"]))} for profile in profiles]
+        if needle:
+            rows = [row for row in rows if needle in " ".join(str(row.get(key) or "") for key in ("full_name", "phone", "email", "vehicle_make", "vehicle_model", "vehicle_year")).casefold()]
+        return {"customers": rows}
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Customer directory is unavailable.") from exc
+
+
 @router.get("/payments")
 def list_admin_payments(
     status: Literal["pending", "authorized", "paid", "failed", "partially_refunded", "refunded"] | None = None,

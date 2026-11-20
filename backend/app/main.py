@@ -16,6 +16,7 @@ from app.routes.admin_orders import router as admin_orders_router
 from app.routes.admin_exports import router as admin_exports_router
 from app.routes.admin_images import router as admin_images_router
 from app.routes.admin_read import router as admin_read_router
+from app.routes.admin_suppliers import router as admin_suppliers_router
 from app.payments.protocol import PaymentAdapter
 from app.payments.registry import PaymentRegistry
 from app.routes.checkout import router as checkout_router
@@ -49,6 +50,7 @@ def create_app(
     application.include_router(admin_exports_router)
     application.include_router(admin_images_router)
     application.include_router(admin_read_router)
+    application.include_router(admin_suppliers_router)
     application.include_router(checkout_router)
     application.include_router(payments_router)
     application.include_router(shipping_router)
