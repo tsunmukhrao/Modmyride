@@ -29,6 +29,11 @@ class ReviewInput(BaseModel):
     body: str = Field(min_length=10, max_length=3000)
 
 
+class CustomerProfileUpdate(BaseModel):
+    full_name: str = Field(min_length=2, max_length=120)
+    phone: str = Field(min_length=8, max_length=20)
+
+
 async def _optional_user(credentials: HTTPAuthorizationCredentials | None, request: Request):
     if credentials is None:
         return None
@@ -50,6 +55,27 @@ def get_identity(request: Request, user: dict[str, Any] = Depends(get_current_us
         raise HTTPException(status_code=503, detail="Could not load your profile.") from exc
     profile = rows[0] if rows else {"role": "customer"}
     return {"user": {"id": user["id"], "email": user.get("email", "")}, "profile": profile, "role": "admin" if profile.get("role") == "admin" else "customer"}
+
+
+@router.put("/api/account/profile")
+def update_customer_profile(
+    payload: CustomerProfileUpdate,
+    user: dict[str, Any] = Depends(get_current_user),
+    client: Any = Depends(get_supabase),
+):
+    full_name = payload.full_name.strip()
+    phone = payload.phone.strip()
+    if len(full_name) < 2 or not re.fullmatch(r"\+?[1-9]\d{7,14}", phone):
+        raise HTTPException(status_code=400, detail="Enter a name and phone number with country code.")
+    try:
+        result = client.table("profiles").update({"full_name": full_name, "phone": phone}).eq("id", user["id"]).select("id").execute()
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Your profile could not be found.")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Could not save your profile right now.") from exc
+    return {"profile": {"full_name": full_name, "phone": phone}}
 
 
 @router.get("/api/account/orders")

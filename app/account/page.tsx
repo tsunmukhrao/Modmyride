@@ -1,8 +1,8 @@
 import { AuthForm } from '../../components/auth-form';
-import { SignOutButton } from '../../components/sign-out-button';
 import { getCurrentIdentity } from '../../lib/auth';
 import { backendServerFetch } from '../../lib/backend-api.server';
 import { OrderRequestActions } from '../../components/order-request-actions';
+import { CustomerProfileEditor } from '../../components/customer-profile-editor';
 
 type AccountPageProps = { searchParams: Promise<{ error?: string; mode?: string; next?: string }> };
 type AccountOrder = {
@@ -23,15 +23,20 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
   const mode = params.mode === 'recovery' ? 'recovery' : params.mode === 'reset' ? 'reset' : 'signin';
 
   return <main className="account-page">
-    <nav className="nav"><a className="brand" href="/"><span className="brand-mark">M</span> MODMYRIDE</a><a className="text-link" href="/">← Back to store</a></nav>
-    <section className="account-shell">
+    {(!identity || mode === 'recovery') && <nav className="nav"><a className="brand" href="/"><span className="brand-mark">M</span> MODMYRIDE</a><a className="text-link" href="/">← Back to store</a></nav>}
+    <section className={identity && mode !== 'recovery' ? 'account-shell customer-account-shell' : 'account-shell'}>
       {identity && mode !== 'recovery' ? <>
-        <p className="eyebrow">GARAGE / YOUR PROFILE</p>
-        <h1>Your garage.</h1>
-        <div className="account-grid">
-          <div className="account-card"><p className="eyebrow">PROFILE</p><h3>{identity.profile?.full_name || identity.user.email}</h3><p className="muted">{identity.user.email}</p><p className="muted">{identity.profile?.phone || 'Add a phone number to your profile.'}</p>{identity.role === 'admin' && <a className="text-link" href="/admin">Open admin panel →</a>}<SignOutButton /></div>
-          <div className="account-card"><p className="eyebrow">SAVED VEHICLE</p><h3>{identity.profile?.vehicle_make ? `${identity.profile.vehicle_make} ${identity.profile.vehicle_model ?? ''}` : 'Choose your vehicle.'}</h3><p className="muted">{identity.profile?.vehicle_year ?? 'Fitment personalizes your parts search.'}</p><a className="ghost account-action" href="/fitment">Set vehicle</a></div>
-          <div className="account-card account-wide"><p className="eyebrow">ORDER HISTORY / DELIVERY STATUS</p>{orders.orders?.length ? <div className="account-order-list">{orders.orders.map((order) => {
+        <div className="customer-workspace">
+          <aside className="customer-sidebar"><a className="customer-brand" href="/"><span className="brand-mark">M</span><span>MODMYRIDE<small>YOUR GARAGE</small></span></a><p className="eyebrow">ACCOUNT</p><a className="customer-nav active" href="#customer-overview">⌂ <span>Overview</span></a><a className="customer-nav" href="#customer-profile">◉ <span>Profile</span></a><a className="customer-nav" href="#customer-vehicle">◇ <span>My vehicle</span></a><a className="customer-nav" href="#customer-orders">▤ <span>Orders</span></a><div className="customer-sidebar-bottom"><a href="/collection">Browse the store ↗</a><a href="/">Back to home</a></div></aside>
+          <div className="customer-main" id="customer-overview">
+            <header className="customer-topbar"><div><span>Customer workspace</span><b>·</b><strong>Overview</strong></div><span>{identity.user.email}</span>{identity.role === 'admin' && <a className="ghost" href="/admin">Admin panel →</a>}</header>
+            <section className="customer-overview"><p className="eyebrow">GARAGE / ACCOUNT OVERVIEW</p><h1>Your garage.</h1><p className="muted">Manage your details, vehicle fitment, and orders in one place.</p></section>
+            <div className="customer-metrics"><a href="#customer-orders"><span>ORDERS</span><strong>{orders.orders?.length ?? 0}</strong><small>View order history →</small></a><a href="#customer-vehicle"><span>SAVED VEHICLE</span><strong>{identity.profile?.vehicle_make ? '1' : '0'}</strong><small>{identity.profile?.vehicle_make ? 'Fitment profile saved' : 'Set up fitment →'}</small></a><a href="/collection"><span>SHOP</span><strong>↗</strong><small>Browse upgrades →</small></a></div>
+            <div className="customer-module-grid" id="customer-profile">
+              <CustomerProfileEditor fullName={identity.profile?.full_name ?? ''} phone={identity.profile?.phone ?? ''} email={identity.user.email} />
+              <section className="account-card customer-vehicle" id="customer-vehicle"><div className="customer-module-heading"><div><p className="eyebrow">FITMENT / GARAGE</p><h2>My vehicle</h2></div><span className="module-icon">◇</span></div><h3>{identity.profile?.vehicle_make ? `${identity.profile.vehicle_make} ${identity.profile.vehicle_model ?? ''}` : 'Choose your vehicle'}</h3><p className="muted">{identity.profile?.vehicle_year ? `${identity.profile.vehicle_year} · Parts matched to your ride` : 'Save a vehicle to make finding compatible parts easier.'}</p><a className="ghost account-action" href="/fitment">{identity.profile?.vehicle_make ? 'Update vehicle →' : 'Set up vehicle →'}</a></section>
+            </div>
+          <div className="account-card account-wide customer-orders" id="customer-orders"><div className="customer-module-heading"><div><p className="eyebrow">FULFILLMENT / HISTORY</p><h2>Your orders</h2></div><a className="text-link" href="/collection">Browse store →</a></div>{orders.orders?.length ? <div className="account-order-list">{orders.orders.map((order) => {
             const shipment = Array.isArray(order.shipments) ? order.shipments[0] : order.shipments;
             const payments = Array.isArray(order.payments) ? order.payments : [];
             return <article className="account-order" key={order.id}>
@@ -44,6 +49,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
               {order.order_status_history?.length ? <ol className="order-timeline" aria-label={`Status timeline for order ${order.id.slice(0, 8)}`}>{[...order.order_status_history].sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at)).map((event, index) => <li key={`${event.created_at}-${index}`}><span className="timeline-dot" /><div><strong>{event.new_status.replaceAll('_', ' ')}</strong><time dateTime={event.created_at}>{new Date(event.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</time>{event.note && <span className="muted">{event.note}</span>}</div></li>)}</ol> : null}
             </article>;
           })}</div> : <><h3>No orders yet.</h3><p className="muted">Your order history and delivery tracking will appear here after checkout.</p></>}<a className="text-link" href="/collection">Explore the collection →</a></div>
+          </div>
         </div>
       </> : <>
         <p className="eyebrow">GARAGE / YOUR PROFILE</p>
