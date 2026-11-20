@@ -24,12 +24,18 @@ export function AuthForm({ initialMode = 'signin', notice = '', redirectTo = '/'
         const parsed = loginSchema.safeParse({ email: form.get('email'), password: form.get('password') });
         if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? 'Check your details.');
         const { data: authData, error: authError } = await supabase.auth.signInWithPassword(parsed.data);
-        if (authError) throw new Error('Email or password is incorrect.');
-        const identity = await fetch('/api/auth/me', {
-          cache: 'no-store',
-          headers: { Authorization: `Bearer ${authData.session.access_token}` },
-        });
-        const profile = identity.ok ? await identity.json() : null;
+        if (authError) {
+          const message = authError.message.toLowerCase();
+          if (message.includes('not confirmed')) throw new Error('Confirm your email using the link we sent, then sign in again.');
+          if (message.includes('rate limit') || message.includes('too many')) throw new Error('Too many sign-in attempts. Wait a few minutes and try again.');
+          throw new Error('Email or password is incorrect. Check both fields and try again.');
+        }
+        if (!authData.session) throw new Error('Supabase did not create a session. Check the project’s email confirmation settings.');
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', authData.user.id)
+          .maybeSingle();
         router.replace(profile?.role === 'admin' ? '/admin' : safeReturnPath(redirectTo) ?? '/'); router.refresh(); return;
       }
       if (mode === 'register') {

@@ -32,12 +32,12 @@ export function SiteHeader() {
       setIsSignedIn(Boolean(session));
       if (!session) { setIsAdmin(false); return; }
       try {
-        const response = await fetch('/api/auth/me', {
-          cache: 'no-store',
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        const identity = response.ok ? await response.json() as { role?: string } : null;
-        if (active) setIsAdmin(identity?.role === 'admin');
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        if (active) setIsAdmin(profile?.role === 'admin');
       } catch {
         if (active) setIsAdmin(false);
       }
