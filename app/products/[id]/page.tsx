@@ -21,6 +21,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const response = await backendServerFetch(`/api/products/${encodeURIComponent(productIdentifier)}`);
   const payload = response?.ok ? await response.json() as { product?: ProductDetail } : null;
   const product = payload?.product ?? localProduct;
+  const isLiveProduct = Boolean(payload?.product);
   if (!product) notFound();
 
   const specifications = Object.entries(product.specifications);
@@ -39,8 +40,10 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
           <div className="product-detail-price"><strong>₹{product.price.toLocaleString('en-IN')}</strong>{product.compareAtPrice && product.compareAtPrice > product.price ? <del>₹{product.compareAtPrice.toLocaleString('en-IN')}</del> : null}</div>
           <p className="product-detail-description">{product.description}</p>
           {product.sourceUrl && <div className="product-detail-block"><p className="eyebrow">REFERENCE / PRICE CHECKED {product.sourceCheckedAt ?? 'DATE NOT RECORDED'}</p><a className="text-link" href={product.sourceUrl} target="_blank" rel="noopener noreferrer">View original supplier listing ↗</a><p className="muted">Demo catalog data only. Supplier prices, photographs, stock, and fitment may change; verify directly before purchase.</p></div>}
-          <p className={product.inStock ? 'stock-state available' : 'stock-state'}>{product.inStock ? '● Available to order' : '● Currently out of stock'}</p>
-          <ProductPurchase productId={product.id} inStock={product.inStock} variants={product.variants} />
+          {isLiveProduct ? <>
+            <p className={product.inStock ? 'stock-state available' : 'stock-state'}>{product.inStock ? '● Available to order' : '● Currently out of stock'}</p>
+            <ProductPurchase productId={product.id} inStock={product.inStock} variants={product.variants} />
+          </> : <p className="stock-state">Preview listing — this item is not yet in the live catalog and cannot be ordered.</p>}
           <div className="product-detail-block"><p className="eyebrow">FITMENT / COMPATIBILITY</p>{product.vehicles.length ? <ul>{product.vehicles.map((vehicle) => <li key={vehicle}>{vehicle}</li>)}</ul> : <p className="muted">Fitment details are being confirmed. Check with our team before ordering.</p>}</div>
           {specifications.length > 0 && <div className="product-detail-block"><p className="eyebrow">SPECIFICATIONS</p><dl>{specifications.map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{value}</dd></div>)}</dl></div>}
           <div className="product-detail-block"><p className="eyebrow">SHIPPING</p><p className="muted">Delivery options and estimated arrival are confirmed during checkout.</p></div>

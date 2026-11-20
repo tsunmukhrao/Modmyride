@@ -3,6 +3,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { mergeCartLines, normalizeCartLines, setCartQuantity, type CartLine } from '../lib/cart';
+import { products as localProducts, type Product } from '../lib/catalog';
+import { backendFetch } from '../lib/backend-api';
 
 type CartContextValue = {
   lines: CartLine[];
@@ -27,9 +29,33 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    try { setLines(normalizeCartLines(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]'))); }
-    catch { setLines([]); }
-    setReady(true);
+    let active = true;
+    async function restoreCart() {
+      let saved: CartLine[] = [];
+      try { saved = normalizeCartLines(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')); }
+      catch { /* Ignore malformed local cart data. */ }
+
+      const resolved = await Promise.all(saved.map(async (line) => {
+        const localProduct = localProducts.find((product) => product.id === line.productId);
+        if (!localProduct) return line;
+        try {
+          const response = await backendFetch(`/api/products/${encodeURIComponent(localProduct.sku)}`);
+          if (!response.ok) return line;
+          const payload = await response.json() as { product?: Product };
+          const liveId = payload.product?.id;
+          return liveId ? { ...line, productId: liveId } : line;
+        } catch { return line; }
+      }));
+
+      if (active) {
+        const normalized = normalizeCartLines(resolved);
+        setLines(normalized);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+        setReady(true);
+      }
+    }
+    void restoreCart();
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
