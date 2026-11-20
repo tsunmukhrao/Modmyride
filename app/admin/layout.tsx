@@ -1,9 +1,12 @@
 import { AdminShell } from '../../components/admin-shell';
 import { requireAdmin } from '../../lib/auth';
+import { getSupabaseServer } from '../../lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const identity = await requireAdmin();
-  return <AdminShell email={identity.user.email}>{children}</AdminShell>;
+  const supabase = await getSupabaseServer();
+  const { data: { session } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+  return <AdminShell email={identity.user.email} accessToken={session?.access_token ?? null}>{children}</AdminShell>;
 }

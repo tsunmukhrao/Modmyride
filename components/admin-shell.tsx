@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { SignOutButton } from './sign-out-button';
+import { setAdminAccessToken } from '../lib/backend-api';
 
 const sections = [
   { label: 'Overview', href: '/admin', mark: '⌂' },
@@ -17,9 +18,10 @@ const sections = [
   { label: 'Reports', href: '/admin/reports', mark: '▥' },
 ];
 
-export function AdminShell({ email, children }: { email: string; children: React.ReactNode }) {
+export function AdminShell({ email, accessToken, children }: { email: string; accessToken: string | null; children: React.ReactNode }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  setAdminAccessToken(accessToken);
 
   return <div className="erp-frame">
     <aside className={`erp-sidebar ${menuOpen ? 'open' : ''}`}>
