@@ -26,8 +26,7 @@ describe('catalog discovery', () => {
 
   it('searches product names, SKUs, descriptions, tags, and fitment locally', () => {
     expect(sortAndFilterProducts(products, { query: 'wiper' }).map((product) => product.id)).toEqual(expect.arrayContaining([
-      'ford-figo-aspire-wipers',
-      'import-autofurnish-mmr-af-146',
+      'import-mmr-af-157',
     ]));
   });
 });

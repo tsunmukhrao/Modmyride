@@ -1,91 +1,47 @@
-import { getDemoProductImage } from './demo-product-images';
-import { indiaVehicles } from './india-vehicles';
 import type { Product } from './catalog';
 
-type ListingSeed = [name: string, category: string, price: number, sourceUrl: string, tags: string[], fitment?: string];
-
-const universalSource = 'https://www.autofurnish.com/collections/universal-car-accessories';
-const matsSource = 'https://www.autofurnish.com/collections/car-foot-mats';
-const utilitySource = 'https://www.autofurnish.com/collections/all-car-accessories';
-
-const universalSeeds: ListingSeed[] = [
-  ['Universal Magnetic Phone Mount','Audio & Tech',599,universalSource,['phone mount','magnetic','dashboard']],
-  ['Universal Vent-Clip Phone Holder','Audio & Tech',399,universalSource,['phone holder','vent mount']],
-  ['Dual-Port USB-C Fast Car Charger','Audio & Tech',899,utilitySource,['charger','usb-c','fast charging']],
-  ['Universal 12V USB Charging Adapter','Audio & Tech',499,utilitySource,['charger','12v','usb']],
-  ['Universal Dashboard Anti-Slip Pad','Interior',299,universalSource,['dashboard','anti-slip','storage']],
-  ['Universal PU Steering Wheel Cover','Interior',699,universalSource,['steering cover','grip']],
-  ['Universal Seat-Gap Filler Pair','Interior',499,universalSource,['seat gap','organizer','pair']],
-  ['Universal Neck-Rest Cushion Pair','Interior',799,universalSource,['neck rest','cushion','comfort']],
-  ['Universal Lumbar Support Cushion','Interior',899,universalSource,['lumbar','back support','cushion']],
-  ['Universal Back-Seat Organizer','Interior',699,utilitySource,['seat organizer','back seat','storage']],
-  ['Universal Sun-Visor Tissue Holder','Interior',499,universalSource,['tissue holder','sun visor']],
-  ['Universal Foldable Trunk Organizer','Car Care & Utility',799,utilitySource,['boot organizer','foldable','storage']],
-  ['Universal Elastic Cargo Net','Car Care & Utility',599,utilitySource,['cargo net','boot','storage']],
-  ['Universal Microfiber Drying Towel Set','Car Care & Utility',399,utilitySource,['microfiber','drying towel','cleaning']],
-  ['Universal Car-Wash Shampoo Concentrate','Car Care & Utility',499,utilitySource,['car wash','shampoo','cleaning']],
-  ['Universal Interior Detailing Brush Set','Car Care & Utility',349,utilitySource,['detailing brush','interior cleaning']],
-  ['Universal Glass-Cleaning Cloth Pack','Car Care & Utility',249,utilitySource,['glass','microfiber','cleaning']],
-  ['Universal Tyre-Pressure Gauge','Wheels & Tyres',399,utilitySource,['tyre pressure','gauge','safety']],
-  ['Portable 12V Tyre Inflator','Wheels & Tyres',1999,utilitySource,['tyre inflator','12v','roadside']],
-  ['Universal Puncture-Repair Emergency Kit','Safety & Maintenance',699,utilitySource,['puncture repair','emergency','tyre']],
-  ['Universal Roadside Safety Kit','Safety & Maintenance',999,utilitySource,['roadside','safety','emergency kit']],
-  ['Universal Blind-Spot Mirror Pair','Safety & Maintenance',249,utilitySource,['blind spot','mirror','visibility']],
-  ['Universal Rain-Repellent Glass Treatment','Safety & Maintenance',599,utilitySource,['rain repellent','glass','visibility']],
-  ['Universal Windshield Sun Shade','Exterior',499,universalSource,['sun shade','windshield','heat protection']],
-  ['Universal Door-Edge Guard Strip Set','Exterior',299,universalSource,['door edge','paint protection','universal']],
+const vehicleProducts: Array<[string, string, number, string, string, string]> = [
+  ['Ford EcoSport 2013–16 7D Custom Floor Mats', 'Interior', 4990, 'Ford EcoSport', 'floor mats', '2013–2016 EcoSport fitment. Check the vehicle year and trim before ordering.'],
+  ['Mahindra XUV 3XO Manual 7D Floor Mats', 'Interior', 5390, 'Mahindra XUV 3XO', 'floor mats', 'Manual transmission fitment for the Mahindra XUV 3XO.'],
+  ['Mahindra XUV 3XO Automatic 7D Floor Mats', 'Interior', 5390, 'Mahindra XUV 3XO', 'floor mats', 'Automatic transmission fitment for the Mahindra XUV 3XO.'],
+  ['Mahindra XUV 3XO Automatic 9D Premium Mats', 'Interior', 7990, 'Mahindra XUV 3XO', 'floor mats', 'Premium 9D mat set for the automatic XUV 3XO.'],
+  ['Tata Nexon 2020 7D Luxury Floor Mats', 'Interior', 5390, 'Tata Nexon', 'floor mats', '7D mat set for the 2020 Tata Nexon.'],
+  ['Hyundai Creta 2024 7D Floor Mats', 'Interior', 5390, 'Hyundai Creta', 'floor mats', '7D mat set for the 2024 Hyundai Creta.'],
+  ['Toyota Innova Crysta 2016–23 7D Mats', 'Interior', 6290, 'Toyota Innova Crysta', 'floor mats', 'Three-row mat set for the 2016–2023 Innova Crysta.'],
+  ['Mahindra Thar 2020 7D Luxury Floor Mats', 'Interior', 5390, 'Mahindra Thar', 'floor mats', 'Mat set for the 2020 Mahindra Thar.'],
+  ['Tata Punch EV 2024 7D Custom Mats', 'Interior', 5390, 'Tata Punch EV', 'floor mats', 'EV-specific mat set for the 2024 Tata Punch EV.'],
+  ['Toyota Innova Crysta 7D Boot Mat', 'Car Care & Utility', 1590, 'Toyota Innova Crysta', 'boot mat', 'Boot liner for the Innova Crysta. Check seat-fold and boot-floor configuration.'],
+  ['Ford EcoSport Triple-Stitched Body Cover', 'Exterior', 1495, 'Ford EcoSport', 'body cover', 'Vehicle cover sized for the Ford EcoSport.'],
+  ['Ford EcoSport Custom 7D Floor Mat Set', 'Interior', 5390, 'Ford EcoSport', 'floor mats', 'Custom 7D mat set for the Ford EcoSport.'],
+  ['Ford EcoSport 9D Premium Floor Mat Set', 'Interior', 7990, 'Ford EcoSport', 'floor mats', 'Premium 9D mat set for the Ford EcoSport.'],
+  ['Ford EcoSport Waterproof Body Cover', 'Exterior', 1999, 'Ford EcoSport', 'body cover', 'Water-resistant cover sized for the Ford EcoSport.'],
+  ['Ford EcoSport Custom Boot Mat', 'Car Care & Utility', 1590, 'Ford EcoSport', 'boot mat', 'Boot mat sized for the Ford EcoSport.'],
+  ['Ford EcoSport Cabin Air Filter', 'Safety & Maintenance', 899, 'Ford EcoSport', 'cabin filter', 'Replacement cabin air filter for the Ford EcoSport.'],
+  ['Ford Figo Custom Floor Mat Set', 'Interior', 4290, 'Ford Figo', 'floor mats', 'Custom-fit floor mats for the Ford Figo.'],
+  ['Ford Figo / Aspire Wiper Blade Pair', 'Safety & Maintenance', 1499, 'Ford Figo', 'wiper blades', 'Front wiper blade pair for Ford Figo and Aspire.'],
+  ['Ford Figo Waterproof Body Cover', 'Exterior', 1799, 'Ford Figo', 'body cover', 'Water-resistant cover sized for the Ford Figo.'],
+  ['Ford Endeavour 3-Row Floor Mat Set', 'Interior', 6990, 'Ford Endeavour', 'floor mats', 'Three-row floor mat set for the Ford Endeavour.'],
+  ['Ford Endeavour Boot Cargo Liner', 'Car Care & Utility', 4499, 'Ford Endeavour', 'cargo liner', 'Cargo liner sized for the Ford Endeavour boot.'],
+  ['Ford Mustang Premium Carpet Mat Set', 'Interior', 5999, 'Ford Mustang', 'floor mats', 'Premium carpet floor mat set for the Ford Mustang.'],
+  ['Mahindra XUV 3XO Manual Custom Floor Mats', 'Interior', 5390, 'Mahindra XUV 3XO', 'floor mats', 'Manual transmission custom-fit floor mats.'],
+  ['Mahindra XUV 3XO Automatic Custom Floor Mats', 'Interior', 5390, 'Mahindra XUV 3XO', 'floor mats', 'Automatic transmission custom-fit floor mats.'],
+  ['Mahindra XUV 3XO Waterproof Body Cover', 'Exterior', 1999, 'Mahindra XUV 3XO', 'body cover', 'Water-resistant body cover for the Mahindra XUV 3XO.'],
 ];
 
-const vehicleSeeds: ListingSeed[] = [
-  ['EcoSport Custom 7D Floor Mat Set','Interior',5390,matsSource,['Ford','EcoSport','floor mats','7D'],'Ford|EcoSport'],
-  ['EcoSport 9D Premium Floor Mat Set','Interior',7990,matsSource,['Ford','EcoSport','floor mats','9D'],'Ford|EcoSport'],
-  ['EcoSport Waterproof Body Cover','Exterior',1999,utilitySource,['Ford','EcoSport','body cover'],'Ford|EcoSport'],
-  ['EcoSport Custom Boot Mat','Car Care & Utility',1590,utilitySource,['Ford','EcoSport','boot mat'],'Ford|EcoSport'],
-  ['EcoSport Cabin Air Filter','Safety & Maintenance',899,utilitySource,['Ford','EcoSport','cabin filter'],'Ford|EcoSport'],
-  ['Figo Custom Floor Mat Set','Interior',4290,matsSource,['Ford','Figo','floor mats'],'Ford|Figo'],
-  ['Figo / Aspire Wiper Blade Pair','Safety & Maintenance',1499,utilitySource,['Ford','Figo','Aspire','wiper blades'],'Ford|Figo'],
-  ['Figo Waterproof Body Cover','Exterior',1799,utilitySource,['Ford','Figo','body cover'],'Ford|Figo'],
-  ['Endeavour 3-Row Floor Mat Set','Interior',6990,matsSource,['Ford','Endeavour','floor mats','3 row'],'Ford|Endeavour'],
-  ['Endeavour Boot Cargo Liner','Car Care & Utility',4499,utilitySource,['Ford','Endeavour','cargo liner'],'Ford|Endeavour'],
-  ['Mustang Premium Carpet Mat Set','Interior',5999,matsSource,['Ford','Mustang','floor mats'],'Ford|Mustang'],
-  ['XUV 3XO Manual Custom Floor Mats','Interior',5390,matsSource,['Mahindra','XUV 3XO','manual','floor mats'],'Mahindra|XUV 3XO'],
-  ['XUV 3XO Automatic Custom Floor Mats','Interior',5390,matsSource,['Mahindra','XUV 3XO','automatic','floor mats'],'Mahindra|XUV 3XO'],
-  ['XUV 3XO Waterproof Body Cover','Exterior',1999,utilitySource,['Mahindra','XUV 3XO','body cover'],'Mahindra|XUV 3XO'],
-  ['Thar 3-Door Custom Floor Mats','Interior',5390,matsSource,['Mahindra','Thar','floor mats'],'Mahindra|Thar'],
-  ['Thar Waterproof Body Cover','Exterior',2199,utilitySource,['Mahindra','Thar','body cover'],'Mahindra|Thar'],
-  ['Tata Nexon Custom 7D Floor Mats','Interior',5390,matsSource,['Tata','Nexon','floor mats','7D'],'Tata|Nexon'],
-  ['Tata Nexon Custom Boot Mat','Car Care & Utility',1590,utilitySource,['Tata','Nexon','boot mat'],'Tata|Nexon'],
-  ['Tata Punch EV Floor Mat Set','Interior',5390,matsSource,['Tata','Punch EV','floor mats','EV'],'Tata|Punch EV'],
-  ['Hyundai Creta Custom Floor Mats','Interior',5390,matsSource,['Hyundai','Creta','floor mats'],'Hyundai|Creta'],
-  ['Hyundai Creta Waterproof Body Cover','Exterior',1999,utilitySource,['Hyundai','Creta','body cover'],'Hyundai|Creta'],
-  ['Maruti Swift Custom Floor Mat Set','Interior',4290,matsSource,['Maruti Suzuki','Swift','floor mats'],'Maruti Suzuki|Swift'],
-  ['Maruti Baleno Waterproof Body Cover','Exterior',1795,utilitySource,['Maruti Suzuki','Baleno','body cover'],'Maruti Suzuki|Baleno'],
-  ['Toyota Innova Crysta 3-Row Mat Set','Interior',6290,matsSource,['Toyota','Innova Crysta','floor mats','3 row'],'Toyota|Innova Crysta'],
-  ['Kia Sonet Custom Floor Mat Set','Interior',5390,matsSource,['Kia','Sonet','floor mats'],'Kia|Sonet'],
-];
-
-const allIndiaVehicleNames = indiaVehicles.map(({ make, model }) => `${make} ${model}`);
-const allSeeds = [...universalSeeds, ...vehicleSeeds];
-
-export const additionalParts: Product[] = allSeeds.map(([name, category, price, sourceUrl, tags, fitment], index) => {
-  const vehicleNames = fitment ? [fitment.replace('|', ' ')] : allIndiaVehicleNames;
-  const sku = `MMR-AF-${String(index + 115).padStart(3, '0')}`;
+export const additionalParts: Product[] = vehicleProducts.map(([name, category, price, vehicle, productType, description], index) => {
+  const sku = `MMR-AF-${String(index + 140).padStart(3, '0')}`;
   return {
-    id: `import-autofurnish-${sku.toLowerCase()}`,
+    id: `import-${sku.toLowerCase()}`,
     sku,
     name,
     category,
     price,
-    image: getDemoProductImage(category),
-    description: fitment
-      ? `Demo catalog reference based on AutoFurnish India-market accessory listings. The image is illustrative; verify exact generation, trim, and dimensions with the supplier. Price and stock are not synchronized.`
-      : `Universal-fit demo catalog reference based on AutoFurnish accessory categories. The image is illustrative; confirm dimensions, installation, and vehicle suitability. Price and stock are not synchronized.`,
-    tags: fitment ? tags : ['universal', ...tags],
-    vehicles: vehicleNames,
-    inStock: true,
-    brand: 'AutoFurnish',
-    popularity: Math.max(35, 88 - index),
-    sourceUrl,
-    sourceCheckedAt: '2026-11-13',
+    image: `/images/products/catalog/${sku.toLowerCase()}.svg`,
+    description,
+    tags: [vehicle.split(' ')[0], ...vehicle.split(' ').slice(1), productType],
+    vehicles: [vehicle],
+    inStock: false,
+    brand: 'MODMYRIDE',
+    popularity: Math.max(35, 90 - index),
   };
 });

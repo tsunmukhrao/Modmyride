@@ -51,30 +51,6 @@ const importOutput = execFileSync('node', ['scripts/import-india-vehicles.mjs'],
   },
 });
 
-const { data: vehicles, error: vehiclesError } = await supabase.from('vehicles').select('id');
-if (vehiclesError) throw new Error(`Could not load local vehicles: ${vehiclesError.message}`);
-const { data: universalProducts, error: productsError } = await supabase
-  .from('products')
-  .select('id')
-  .gte('sku', 'MMR-AF-115')
-  .lte('sku', 'MMR-AF-139');
-if (productsError) throw new Error(`Could not load universal demo products: ${productsError.message}`);
-
-const universalFitments = (universalProducts ?? []).flatMap(({ id: productId }) =>
-  (vehicles ?? []).map(({ id: vehicleId }) => ({
-    product_id: productId,
-    vehicle_id: vehicleId,
-    notes: 'Universal accessory demo; confirm dimensions and installation requirements.',
-  })),
-);
-for (let offset = 0; offset < universalFitments.length; offset += 500) {
-  const { error } = await supabase.from('product_compatibility').upsert(
-    universalFitments.slice(offset, offset + 500),
-    { onConflict: 'product_id,vehicle_id' },
-  );
-  if (error) throw new Error(`Could not link universal demo products to local vehicles: ${error.message}`);
-}
-
 console.log('Local Supabase env written to ignored .env.development.local.');
 console.log(importOutput.trim());
 console.log('Local demo accounts (these credentials are for this local database only):');

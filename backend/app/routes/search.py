@@ -88,7 +88,7 @@ def _format_product(row: dict[str, Any]) -> dict[str, Any]:
     category = row.get("categories") or {}
     brand = row.get("brands") or {}
     inventory_rows = row.get("inventory") or []
-    inventory = inventory_rows[0] if inventory_rows else {}
+    inventory = inventory_rows[0] if isinstance(inventory_rows, list) and inventory_rows else inventory_rows if isinstance(inventory_rows, dict) else {}
     compatibility = row.get("product_compatibility") or []
     vehicles: list[str] = []
     for item in compatibility:
@@ -101,7 +101,22 @@ def _format_product(row: dict[str, Any]) -> dict[str, Any]:
         vehicles.append(f"{make} {model}{year_label}")
     reviews = [review for review in row.get("reviews", []) if review.get("status") == "approved"]
     ratings = [float(review["rating"]) for review in reviews if review.get("rating") is not None]
-    stock_known = bool(inventory)
+    variants = [
+        {
+            "id": str(variant["id"]),
+            "sku": str(variant.get("sku", "")),
+            "options": variant.get("options") or {},
+            "price": float(variant.get("price", 0)),
+            "inStock": int(variant.get("quantity", 0)) > int(variant.get("reserved", 0)),
+        }
+        for variant in (row.get("product_variants") or [])
+        if variant.get("active", True)
+    ]
+    in_stock = (
+        any(variant["inStock"] for variant in variants)
+        if variants
+        else int(inventory.get("quantity", 0)) > int(inventory.get("reserved", 0))
+    )
     return {
         "id": str(row.get("id", "")),
         "sku": str(row.get("sku", "")),
@@ -112,24 +127,13 @@ def _format_product(row: dict[str, Any]) -> dict[str, Any]:
         "description": str(row.get("description", "")),
         "tags": row.get("tags") or [],
         "vehicles": vehicles,
-        "inStock": int(inventory.get("quantity", 0)) > int(inventory.get("reserved", 0)) if stock_known else bool(row.get("in_stock")),
+        "inStock": in_stock,
         "brand": str(brand.get("name", "")),
         "rating": sum(ratings) / len(ratings) if ratings else 0,
         "popularity": int(row.get("popularity", 0)),
         "createdAt": str(row.get("created_at", "")),
         "compareAtPrice": float(row["compare_at_price"]) if row.get("compare_at_price") is not None else None,
-        "sourceUrl": str(row.get("source_url") or "") or None,
-        "variants": [
-            {
-                "id": str(variant["id"]),
-                "sku": str(variant.get("sku", "")),
-                "options": variant.get("options") or {},
-                "price": float(variant.get("price", 0)),
-                "inStock": int(variant.get("quantity", 0)) > int(variant.get("reserved", 0)),
-            }
-            for variant in (row.get("product_variants") or [])
-            if variant.get("active", True)
-        ],
+        "variants": variants,
     }
 
 
@@ -144,7 +148,7 @@ async def _search(input: SearchInput, client: Any) -> dict[str, Any]:
         return {"products": [], "total": 0, "mode": "database-keyword", "query": input.query, "filters": filters}
 
     base_query = client.table("products").select(
-        "id,sku,name,category_id,brand_id,description,price,compare_at_price,image,tags,in_stock,popularity,created_at,source_url,categories(name),brands(name),product_compatibility(vehicles(make,model,year_from,year_to)),inventory(quantity,reserved),product_variants(id,sku,options,price,quantity,reserved,active),reviews(rating,status)",
+        "id,sku,name,category_id,brand_id,description,price,compare_at_price,image,tags,popularity,created_at,categories(name),brands(name),product_compatibility(vehicles(make,model,year_from,year_to)),inventory(quantity,reserved),product_variants(id,sku,options,price,quantity,reserved,active),reviews(rating,status)",
         count="exact",
     ).eq("status", "active").is_("deleted_at", "null")
     if category_id:
@@ -155,8 +159,6 @@ async def _search(input: SearchInput, client: Any) -> dict[str, Any]:
         base_query = base_query.gte("price", input.minPrice)
     if input.maxPrice is not None:
         base_query = base_query.lte("price", input.maxPrice)
-    if input.inStock is not None:
-        base_query = base_query.eq("in_stock", input.inStock)
     if compatible_ids is not None:
         base_query = base_query.in_("id", compatible_ids)
     if input.query.strip():
@@ -165,7 +167,9 @@ async def _search(input: SearchInput, client: Any) -> dict[str, Any]:
     response = base_query.order(sort_column, desc=input.sort in {"price-desc", "newest"}).limit(1000).execute()
     rows = response.data or []
     products = [_format_product(row) for row in rows]
-    total = response.count if response.count is not None else len(products)
+    if input.inStock is not None:
+        products = [product for product in products if product["inStock"] is input.inStock]
+    total = len(products) if input.inStock is not None else response.count if response.count is not None else len(products)
 
     ranked = products
     if input.rating is not None:

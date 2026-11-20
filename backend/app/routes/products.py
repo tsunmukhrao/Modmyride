@@ -8,7 +8,7 @@ from app.supabase import get_supabase
 
 router = APIRouter(prefix="/api/products", tags=["products"])
 DETAIL_COLUMNS = (
-    "id,sku,name,category_id,brand_id,description,price,compare_at_price,image,tags,in_stock,popularity,created_at,specifications,source_url,"
+    "id,sku,name,category_id,brand_id,description,price,compare_at_price,image,tags,popularity,created_at,specifications,"
     "categories(name),brands(name),product_compatibility(vehicles(make,model,year_from,year_to)),"
     "product_specs(name,value,sort_order),product_images(storage_path,alt_text,sort_order),"
     "inventory(quantity,reserved),reviews(rating,status,title,body,created_at)"
@@ -83,7 +83,8 @@ def _format_product_bundles(rows: list[dict[str, Any]], current_product_id: str,
         inventory = product.get("inventory") or []
         inventory = inventory[0] if isinstance(inventory, list) and inventory else inventory if isinstance(inventory, dict) else {}
         variants = [{"id": str(variant.get("id")), "options": variant.get("options") or {}, "price": float(variant.get("price", 0)), "inStock": int(variant.get("quantity", 0)) > int(variant.get("reserved", 0))} for variant in (product.get("product_variants") or []) if variant.get("active")]
-        entry["items"].append({"id": str(product.get("id", "")), "name": product.get("name", "Automotive part"), "sku": product.get("sku", ""), "image": product.get("image", ""), "price": float(product.get("price", 0)), "inStock": int(inventory.get("quantity", 0)) > int(inventory.get("reserved", 0)) if inventory else bool(product.get("in_stock", True)), "variants": variants, "quantity": int(row.get("quantity", 1))})
+        item_in_stock = any(variant["inStock"] for variant in variants) if variants else int(inventory.get("quantity", 0)) > int(inventory.get("reserved", 0))
+        entry["items"].append({"id": str(product.get("id", "")), "name": product.get("name", "Automotive part"), "sku": product.get("sku", ""), "image": product.get("image", ""), "price": float(product.get("price", 0)), "inStock": item_in_stock, "variants": variants, "quantity": int(row.get("quantity", 1))})
     bundles = []
     for bundle in grouped.values():
         if not any(item["id"] == current_product_id for item in bundle["items"]):
@@ -110,7 +111,7 @@ def get_product(product_id: str, client: Any = Depends(get_supabase)):
     try:
         member_rows = client.table("bundle_items").select("bundle_id").eq("product_id", database_product_id).execute().data or []
         bundle_ids = list(dict.fromkeys(str(item["bundle_id"]) for item in member_rows))
-        bundle_rows = client.table("bundle_items").select("bundle_id,quantity,product_bundles(id,title,description,discount_percent),products(id,sku,name,price,image,status,deleted_at,in_stock,inventory(quantity,reserved),product_variants(id,options,price,quantity,reserved,active),product_compatibility(vehicles(make,model)))").in_("bundle_id", bundle_ids).execute().data or [] if bundle_ids else []
+        bundle_rows = client.table("bundle_items").select("bundle_id,quantity,product_bundles(id,title,description,discount_percent),products(id,sku,name,price,image,status,deleted_at,inventory(quantity,reserved),product_variants(id,options,price,quantity,reserved,active),product_compatibility(vehicles(make,model)))").in_("bundle_id", bundle_ids).execute().data or [] if bundle_ids else []
         vehicle_labels = {f"{(item.get('vehicles') or {}).get('make', '')} {(item.get('vehicles') or {}).get('model', '')}".strip().casefold() for item in row.get("product_compatibility", [])}
         product["bundles"] = _format_product_bundles(bundle_rows, database_product_id, vehicle_labels)
     except Exception as exc:

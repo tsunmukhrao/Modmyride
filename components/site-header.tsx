@@ -10,7 +10,7 @@ import { getSupabaseBrowser } from '../lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 
 const links = [
-  { id: 'shop', label: 'Collection', href: '/collection' },
+  { id: 'shop', label: 'Store', href: '/collection' },
   { id: 'fitment', label: 'Fitment', href: '/fitment' },
 ];
 

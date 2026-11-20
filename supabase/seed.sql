@@ -127,7 +127,7 @@ with catalog(sku,name,category,brand,description,price,compare_at_price,tags,spe
 )
 insert into public.inventory(product_id,quantity,low_stock_threshold)
 select id, case when sku in ('MMR-LGT-301','MMR-SAF-601','MMR-PERF-802') then 0 else 12 end, 4 from upserted
-on conflict (product_id) do update set quantity=excluded.quantity,low_stock_threshold=excluded.low_stock_threshold,updated_at=now();
+on conflict (product_id) do update set low_stock_threshold=excluded.low_stock_threshold,updated_at=now();
 
 with ford_demo(sku,name,category,description,price,tags,popularity,image) as (values
   ('MMR-FORD-001','Ford EcoSport All-Weather Floor Mat Set','Interior','Project demo listing for Ford EcoSport owners. Verify generation and floor layout before purchase.',3299,array['Ford','EcoSport','floor mats','all weather'],94,'/images/products/ford-ecosport-floor-mats.png'),
@@ -147,7 +147,7 @@ on conflict(sku) do update set name=excluded.name,category_id=excluded.category_
 
 insert into public.inventory(product_id,quantity,low_stock_threshold)
 select id,12,4 from public.products where sku like 'MMR-FORD-%'
-on conflict(product_id) do update set quantity=excluded.quantity,low_stock_threshold=excluded.low_stock_threshold,updated_at=now();
+on conflict(product_id) do update set low_stock_threshold=excluded.low_stock_threshold,updated_at=now();
 
 update public.products p set in_stock=(i.quantity-i.reserved > 0)
 from public.inventory i where i.product_id=p.id and p.sku like 'MMR-%';
@@ -203,5 +203,12 @@ on conflict(id) do update set title=excluded.title,description=excluded.descript
 insert into public.bundle_items(bundle_id,product_id,quantity)
 select 'd16f9988-616a-4de4-8c0a-2a50ba85ac10',id,1 from public.products where sku in ('MMR-FORD-001','MMR-FORD-004')
 on conflict(bundle_id,product_id) do update set quantity=excluded.quantity;
+
+-- Keep the local demo storefront aligned with the 25 curated vehicle-specific SKUs.
+-- Other rows remain in the database for reference, but are hidden from customers.
+update public.products
+set status='archived', source_url=null, updated_at=now()
+where sku ~ '^MMR-(INT|EXT|LGT|WHL|TEC|SAF|CARE|PERF)-[0-9]+$'
+   or sku ~ '^MMR-FORD-00[1-5]$';
 
 commit;

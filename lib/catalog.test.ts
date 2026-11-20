@@ -15,14 +15,12 @@ describe('catalog retrieval', () => {
     expect(getLocalProductDetail('not-a-real-product')).toBeNull();
   });
 
-  it('includes at least 50 additional sourced parts across universal and vehicle-specific fitments', () => {
-    expect(additionalParts).toHaveLength(50);
-    expect(additionalParts.filter((part) => part.tags.includes('universal'))).toHaveLength(25);
-    expect(additionalParts.filter((part) => !part.tags.includes('universal'))).toHaveLength(25);
-    expect(additionalParts.every((part) => part.sourceUrl && part.image && part.sku)).toBe(true);
-    expect(products.filter((product) => product.sku >= 'MMR-AF-115' && product.sku <= 'MMR-AF-164')).toHaveLength(50);
-    expect(searchProducts('Universal Magnetic Phone Mount').some((product) => product.sku === 'MMR-AF-115')).toBe(true);
-    expect(searchProducts('', { vehicle: 'Mahindra XUV 3XO' }).some((product) => product.sku === 'MMR-AF-151')).toBe(true);
+  it('contains 25 fitment-specific products without supplier references', () => {
+    expect(additionalParts).toHaveLength(25);
+    expect(products).toHaveLength(25);
+    expect(additionalParts.every((part) => part.vehicles.length === 1 && part.image && part.sku && !('sourceUrl' in part))).toBe(true);
+    expect(searchProducts('Ford EcoSport 7D mats').some((product) => product.sku === 'MMR-AF-151')).toBe(true);
+    expect(searchProducts('', { vehicle: 'Mahindra XUV 3XO' }).some((product) => product.sku === 'MMR-AF-162')).toBe(true);
   });
   it('requests enough results to show the complete seeded catalog', () => {
     expect(ALL_PRODUCTS_PAGE_SIZE).toBe(100);
@@ -40,21 +38,17 @@ describe('catalog retrieval', () => {
     expect(searchProducts('', { vehicle: 'Ford EcoSport' }).some(p => p.vehicles.includes('Ford EcoSport'))).toBe(true);
   });
   it('filters by category and maximum price', () => {
-    expect(searchProducts('', { category: 'Interior', maxPrice: 10000 }).map(p => p.name)).toEqual(expect.arrayContaining([
-      'Ambient LED Cabin Kit',
-      'Ford EcoSport All-Weather Floor Mat Set',
-      'Ford Mustang Premium Floor Mat Set',
-    ]));
+    expect(searchProducts('', { category: 'Interior', maxPrice: 10000 }).length).toBeGreaterThan(0);
   });
   it('builds grounded knowledge text', () => {
-    expect(buildKnowledgeText(searchProducts('carbon')[0])).toContain('Compatible vehicles:');
+    expect(buildKnowledgeText(searchProducts('Ford EcoSport')[0])).toContain('Compatible vehicles:');
   });
   it('extracts a vehicle mention from a natural-language question', () => {
     expect(searchProducts('What fits a Ford EcoSport?').some(p => p.vehicles.includes('Ford EcoSport'))).toBe(true);
   });
   it('supports exact SKU and availability filtering', () => {
-    expect(searchProducts('MMR-INT-002')[0].name).toBe('Ambient LED Cabin Kit');
-    expect(searchProducts('', { inStock: false }).map(p => p.sku)).toEqual(['MMR-LGT-004']);
+    expect(searchProducts('MMR-AF-141')[0].sku).toBe('MMR-AF-141');
+    expect(searchProducts('', { inStock: false })).toHaveLength(25);
   });
   it('puts Ford-specific demo parts first for a Ford parts query', () => {
     const results = searchProducts('Ford parts');
@@ -62,15 +56,12 @@ describe('catalog retrieval', () => {
     expect(results.slice(0, 4).every((product) => product.tags.includes('Ford'))).toBe(true);
   });
 
-  it('includes source-linked parts for India-market vehicles in the storefront catalog', () => {
-    expect(searchProducts('XUV 3XO floor mats').some((product) => product.sourceUrl?.includes('autofurnish.com/products'))).toBe(true);
-    expect(searchProducts('Ford EcoSport 7D mats').some((product) => product.sourceUrl?.includes('autofurnish.com/products'))).toBe(true);
-    expect(searchProducts('', { vehicle: 'Audi RS5' }).every((product) => product.vehicles.includes('Audi RS5'))).toBe(true);
+  it('keeps vehicle-specific products limited to their selected fitment', () => {
+    expect(searchProducts('', { vehicle: 'Audi RS5' })).toEqual([]);
+    expect(searchProducts('', { vehicle: 'Ford EcoSport' }).every((product) => product.vehicles.includes('Ford EcoSport'))).toBe(true);
   });
 
   it('uses India vehicle names for explicit product fitment filters', () => {
-    expect(searchProducts('', { vehicle: 'Audi RS5' }).map((product) => product.sku)).toContain('MMR-WHL-003');
-    expect(searchProducts('', { vehicle: 'Audi RS5 · 2016–2022' }).map((product) => product.sku)).toContain('MMR-WHL-003');
-    expect(searchProducts('', { vehicle: 'Mahindra XUV 3XO' }).some((product) => product.sku === 'MMR-AF-102')).toBe(true);
+    expect(searchProducts('', { vehicle: 'Mahindra XUV 3XO' }).some((product) => product.sku === 'MMR-AF-141')).toBe(true);
   });
 });
