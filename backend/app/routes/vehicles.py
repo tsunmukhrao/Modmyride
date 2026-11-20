@@ -8,7 +8,7 @@ from app.auth import require_admin
 from app.supabase import get_supabase
 
 router = APIRouter(prefix="/api/vehicles", tags=["vehicles"])
-VEHICLE_CSV = Path(__file__).resolve().parents[3] / "data" / "vehicle-database" / "india-cars.csv"
+VEHICLE_CSV = Path(__file__).resolve().parents[2] / "data" / "vehicle-database" / "india-cars.csv"
 
 
 def _load_vehicles() -> list[dict[str, Any]]:

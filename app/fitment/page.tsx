@@ -1,11 +1,17 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { PageShell } from '../../components/page-shell';
+import { indiaVehicles } from '../../lib/india-vehicles';
+
+function vehicleLabel(item: { make: string; model: string; yearStart: number; yearEnd: number | null }) {
+  return `${item.make} ${item.model} · ${item.yearStart}${item.yearEnd ? `–${item.yearEnd}` : '–present'}`;
+}
 
 export default function FitmentPage() {
   const [search, setSearch] = useState('');
   const [vehicle, setVehicle] = useState('');
   const [vehicles, setVehicles] = useState<string[]>([]); const [totalMatches, setTotalMatches] = useState(0); const [nextOffset, setNextOffset] = useState<number | null>(null); const [loadingMore, setLoadingMore] = useState(false);
+  const [usingFallback, setUsingFallback] = useState(false);
   const queryRef = useRef(search); const loadMoreAbort = useRef<AbortController | null>(null);
   useEffect(() => {
     queryRef.current = search;
@@ -14,13 +20,28 @@ export default function FitmentPage() {
     setVehicles([]); setNextOffset(null); setTotalMatches(0);
     const timer = setTimeout(() => {
       fetch(`/api/vehicles?q=${encodeURIComponent(search)}&limit=80`, { signal: controller.signal })
-        .then((response) => response.json())
+        .then((response) => {
+          if (!response.ok) throw new Error('Vehicle list unavailable');
+          return response.json();
+        })
         .then((data) => {
           if (queryRef.current !== search) return;
-          setTotalMatches(data.totalMatches ?? 0);
-          setVehicles((data.vehicles ?? []).map((item: { make: string; model: string; yearStart: number; yearEnd: number | null }) => `${item.make} ${item.model} · ${item.yearStart}${item.yearEnd ? `–${item.yearEnd}` : '–present'}`));
+          const apiVehicles = data.vehicles ?? [];
+          const useLocal = apiVehicles.length === 0 && !search.trim();
+          const nextVehicles = useLocal ? indiaVehicles : apiVehicles;
+          setUsingFallback(useLocal);
+          setTotalMatches(useLocal ? nextVehicles.length : data.totalMatches ?? 0);
+          setVehicles(nextVehicles.map(vehicleLabel));
           setNextOffset(data.nextOffset ?? null);
-        }).catch(() => {});
+        }).catch(() => {
+          if (queryRef.current !== search) return;
+          const normalized = search.trim().toLocaleLowerCase();
+          const localMatches = indiaVehicles.filter((item) => `${item.make} ${item.model}`.toLocaleLowerCase().includes(normalized));
+          setUsingFallback(true);
+          setVehicles(localMatches.map(vehicleLabel));
+          setTotalMatches(localMatches.length);
+          setNextOffset(null);
+        });
     }, 250);
     return () => { clearTimeout(timer); controller.abort(); };
   }, [search]);
@@ -41,6 +62,6 @@ export default function FitmentPage() {
     if (element.scrollHeight - element.scrollTop - element.clientHeight < 80) void loadMore();
   };
   return <PageShell eyebrow="FITMENT ENGINE / 02" title={<>Make it fit. <em>Make it yours.</em></>} intro="Choose your vehicle and the catalog narrows to upgrades that belong on it. Compatibility is checked before recommendation, not after checkout.">
-    <section className="fitment-workspace"><div className="fitment-selector"><p className="eyebrow">YOUR VEHICLE / CLOSEST MATCHES</p><h2>What do you drive?</h2><input className="vehicle-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Start typing your make or model" /><p className="search-count">Showing {vehicles.length.toLocaleString()} of {totalMatches.toLocaleString()} vehicles · scroll for more</p><div className="vehicle-list" onScroll={onVehicleListScroll} aria-label="Vehicle matches">{vehicles.map(item => <button className={vehicle === item ? 'vehicle-choice selected' : 'vehicle-choice'} key={item} onClick={() => setVehicle(item)}><span>{item}</span><span>↗</span></button>)}{loadingMore && <p className="search-count">Loading more vehicles…</p>}</div><button className="button" disabled={!vehicle} onClick={() => document.getElementById('fitment-result')?.scrollIntoView({ behavior: 'smooth' })}>{vehicle ? `Find parts for ${vehicle} →` : 'Select a vehicle first'}</button></div><div id="fitment-result" className="fitment-result"><span className="result-index">FITMENT / LIVE</span>{vehicle ? <><p className="eyebrow">MATCH CONFIRMED</p><h2>{vehicle}</h2><p>Compatibility filters are ready. Your collection will only show products mapped to this vehicle profile.</p><a className="button" href="/collection">View compatible upgrades →</a></> : <><p className="eyebrow">WAITING FOR INPUT</p><h2>Right part.<br /><em>Right machine.</em></h2><p>Pick a vehicle to activate the compatibility layer.</p></>}</div></section>
+    <section className="fitment-workspace"><div className="fitment-selector"><p className="eyebrow">YOUR VEHICLE / CLOSEST MATCHES</p><h2>What do you drive?</h2><input className="vehicle-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Start typing your make or model" /><p className="search-count">Showing {vehicles.length.toLocaleString()} of {totalMatches.toLocaleString()} vehicles · scroll for more</p>{usingFallback && <p className="search-count">Showing the bundled vehicle list while live search is unavailable.</p>}<div className="vehicle-list" onScroll={onVehicleListScroll} aria-label="Vehicle matches">{vehicles.map(item => <button className={vehicle === item ? 'vehicle-choice selected' : 'vehicle-choice'} key={item} onClick={() => setVehicle(item)}><span>{item}</span><span>↗</span></button>)}{loadingMore && <p className="search-count">Loading more vehicles…</p>}</div><button className="button" disabled={!vehicle} onClick={() => document.getElementById('fitment-result')?.scrollIntoView({ behavior: 'smooth' })}>{vehicle ? `Find parts for ${vehicle} →` : 'Select a vehicle first'}</button></div><div id="fitment-result" className="fitment-result"><span className="result-index">FITMENT / LIVE</span>{vehicle ? <><p className="eyebrow">MATCH CONFIRMED</p><h2>{vehicle}</h2><p>Compatibility filters are ready. Your collection will only show products mapped to this vehicle profile.</p><a className="button" href="/collection">View compatible upgrades →</a></> : <><p className="eyebrow">WAITING FOR INPUT</p><h2>Right part.<br /><em>Right machine.</em></h2><p>Pick a vehicle to activate the compatibility layer.</p></>}</div></section>
   </PageShell>;
 }
