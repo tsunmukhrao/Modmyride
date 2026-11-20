@@ -7,6 +7,7 @@ import { readCollectionSearchQuery } from '../../lib/search-url';
 import { findVehicleByKey, vehicleOptionLabel, vehicleOptionValue, type VehicleOption } from '../../lib/vehicle-options';
 import { indiaVehicles } from '../../lib/india-vehicles';
 import { sortAndFilterProducts, type CatalogSort } from '../../lib/catalog-discovery';
+import { CatalogProductActions } from '../../components/catalog-product-actions';
 
 export default function CollectionPage() {
   const [query, setQuery] = useState('');
@@ -19,6 +20,8 @@ export default function CollectionPage() {
   const [rating, setRating] = useState('');
   const [sort, setSort] = useState<CatalogSort>('relevance');
   const [results, setResults] = useState<Product[]>(fallbackProducts);
+  const [liveProductIds, setLiveProductIds] = useState<Set<string>>(() => new Set());
+  const [catalogChecked, setCatalogChecked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [vehicles, setVehicles] = useState<VehicleOption[]>(indiaVehicles);
   const [vehiclesLoading, setVehiclesLoading] = useState(false);
@@ -62,8 +65,12 @@ export default function CollectionPage() {
       if (!response.ok) throw new Error('Search unavailable');
       const data = await response.json();
       const nextResults = (data.products ?? []) as Product[];
+      setLiveProductIds(new Set(nextResults.map((product) => product.id)));
+      setCatalogChecked(true);
       setResults(sortAndFilterProducts(nextResults, { query: activeQuery, category: filters.category, brand: filters.brand || undefined, inStock: filters.inStock ? true : undefined, rating: filters.rating ? Number(filters.rating) : undefined, minPrice: filters.minPrice ? Number(filters.minPrice) : undefined, maxPrice: filters.maxPrice ? Number(filters.maxPrice) : undefined, sort: filters.sort }));
     } catch {
+      setLiveProductIds(new Set());
+      setCatalogChecked(true);
       setResults(sortAndFilterProducts(fallbackProducts, { query: activeQuery, category: filters.category, vehicle: selectedVehicle ? `${selectedVehicle.make} ${selectedVehicle.model}` : undefined, brand: filters.brand || undefined, inStock: filters.inStock ? true : undefined, rating: filters.rating ? Number(filters.rating) : undefined, minPrice: filters.minPrice ? Number(filters.minPrice) : undefined, maxPrice: filters.maxPrice ? Number(filters.maxPrice) : undefined, sort: filters.sort }));
     } finally {
       setBusy(false);
@@ -119,7 +126,7 @@ export default function CollectionPage() {
       <label>Minimum rating<select value={rating} onChange={(event) => setRating(event.target.value)}><option value="">Any rating</option><option value="4">4★ and up</option><option value="3">3★ and up</option></select></label>
       <label className="stock-filter"><input type="checkbox" checked={inStock} onChange={(event) => setInStock(event.target.checked)} /> In stock only</label>
       {vehiclesUnavailable && <p className="search-note">Using the complete local India vehicle seed. Start the Python API to sync database updates.</p>}<p className="search-note">● Exact product, SKU, and vehicle matching</p></div></details>
-      <div className="catalog-results"><div className="results-head"><div><span>{results.length} matching upgrades</span><span className="muted">{query ? `For “${query}”` : 'Curated catalog'}</span></div><label>Sort by <select value={sort} onChange={(event) => setSort(event.target.value as CatalogSort)}><option value="relevance">Relevance</option><option value="popular">Popularity</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="rating">Top rated</option><option value="newest">Newest</option></select></label></div>{results.length ? <div className="product-grid">{results.map((p, i) => <article className="product-card" key={p.id}><a href={`/products/${encodeURIComponent(p.id)}`}><div className={`product-art art-${i % 4}`}><img src={p.image} alt={p.name} loading="lazy" /><span>{String(i + 1).padStart(2,'0')}</span><div>{p.category.toUpperCase()}</div></div></a><div className="product-meta"><div><p className="muted">{p.category}</p><h3>{p.name}</h3></div><strong>₹{p.price.toLocaleString('en-IN')}</strong></div><p className="card-desc">{p.description}</p><a className="text-link product-link" href={`/products/${encodeURIComponent(p.id)}`}>View details →</a></article>)}</div> : <div className="empty-search"><p className="eyebrow">NO MATCHES / TRY AGAIN</p><h2>Nothing in the garage yet.</h2><p>Try a broader vehicle, category, or exact part name or SKU.</p><button className="text-link" onClick={showAllProducts}>Clear all filters →</button></div>}</div>
+      <div className="catalog-results"><div className="results-head"><div><span>{results.length} matching upgrades</span><span className="muted">{query ? `For “${query}”` : 'Curated catalog'}</span></div><label>Sort by <select value={sort} onChange={(event) => setSort(event.target.value as CatalogSort)}><option value="relevance">Relevance</option><option value="popular">Popularity</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="rating">Top rated</option><option value="newest">Newest</option></select></label></div>{results.length ? <div className="product-grid">{results.map((p, i) => <article className="product-card" key={p.id}><a href={`/products/${encodeURIComponent(p.id)}`}><div className={`product-art art-${i % 4}`}><img src={p.image} alt={p.name} loading="lazy" /><span>{String(i + 1).padStart(2,'0')}</span><div>{p.category.toUpperCase()}</div></div></a><div className="product-meta"><div><p className="muted">{p.category}</p><h3>{p.name}</h3></div><strong>₹{p.price.toLocaleString('en-IN')}</strong></div><p className="card-desc">{p.description}</p><CatalogProductActions product={p} live={catalogChecked && liveProductIds.has(p.id)} /><a className="text-link product-link" href={`/products/${encodeURIComponent(p.id)}`}>View details →</a></article>)}</div> : <div className="empty-search"><p className="eyebrow">NO MATCHES / TRY AGAIN</p><h2>Nothing in the garage yet.</h2><p>Try a broader vehicle, category, or exact part name or SKU.</p><button className="text-link" onClick={showAllProducts}>Clear all filters →</button></div>}</div>
     </section>
   </PageShell>;
 }

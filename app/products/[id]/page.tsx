@@ -25,6 +25,8 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   if (!product) notFound();
 
   const specifications = Object.entries(product.specifications);
+  const productVariants = product.variants ?? [];
+  const productAvailable = productVariants.length ? productVariants.some((variant) => variant.inStock) : product.inStock;
   return <main className="subpage product-page">
     <SiteHeader />
     <section className="product-detail-shell">
@@ -41,7 +43,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
           <p className="product-detail-description">{product.description}</p>
           {product.sourceUrl && <div className="product-detail-block"><p className="eyebrow">REFERENCE / PRICE CHECKED {product.sourceCheckedAt ?? 'DATE NOT RECORDED'}</p><a className="text-link" href={product.sourceUrl} target="_blank" rel="noopener noreferrer">View original supplier listing ↗</a><p className="muted">Demo catalog data only. Supplier prices, photographs, stock, and fitment may change; verify directly before purchase.</p></div>}
           {isLiveProduct ? <>
-            <p className={product.inStock ? 'stock-state available' : 'stock-state'}>{product.inStock ? '● Available to order' : '● Currently out of stock'}</p>
+            <p className={productAvailable ? 'stock-state available' : 'stock-state'}>{productAvailable ? '● Available to order' : '● Currently out of stock'}</p>
             <ProductPurchase productId={product.id} inStock={product.inStock} variants={product.variants} />
           </> : <p className="stock-state">Preview listing — this item is not yet in the live catalog and cannot be ordered.</p>}
           <div className="product-detail-block"><p className="eyebrow">FITMENT / COMPATIBILITY</p>{product.vehicles.length ? <ul>{product.vehicles.map((vehicle) => <li key={vehicle}>{vehicle}</li>)}</ul> : <p className="muted">Fitment details are being confirmed. Check with our team before ordering.</p>}</div>

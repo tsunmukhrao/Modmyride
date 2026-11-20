@@ -119,6 +119,17 @@ def _format_product(row: dict[str, Any]) -> dict[str, Any]:
         "createdAt": str(row.get("created_at", "")),
         "compareAtPrice": float(row["compare_at_price"]) if row.get("compare_at_price") is not None else None,
         "sourceUrl": str(row.get("source_url") or "") or None,
+        "variants": [
+            {
+                "id": str(variant["id"]),
+                "sku": str(variant.get("sku", "")),
+                "options": variant.get("options") or {},
+                "price": float(variant.get("price", 0)),
+                "inStock": int(variant.get("quantity", 0)) > int(variant.get("reserved", 0)),
+            }
+            for variant in (row.get("product_variants") or [])
+            if variant.get("active", True)
+        ],
     }
 
 
@@ -133,7 +144,7 @@ async def _search(input: SearchInput, client: Any) -> dict[str, Any]:
         return {"products": [], "total": 0, "mode": "database-keyword", "query": input.query, "filters": filters}
 
     base_query = client.table("products").select(
-        "id,sku,name,category_id,brand_id,description,price,compare_at_price,image,tags,in_stock,popularity,created_at,source_url,categories(name),brands(name),product_compatibility(vehicles(make,model,year_from,year_to)),inventory(quantity,reserved),reviews(rating,status)",
+        "id,sku,name,category_id,brand_id,description,price,compare_at_price,image,tags,in_stock,popularity,created_at,source_url,categories(name),brands(name),product_compatibility(vehicles(make,model,year_from,year_to)),inventory(quantity,reserved),product_variants(id,sku,options,price,quantity,reserved,active),reviews(rating,status)",
         count="exact",
     ).eq("status", "active").is_("deleted_at", "null")
     if category_id:
