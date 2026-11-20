@@ -8,6 +8,32 @@ import { safeReturnPath } from '../lib/safe-return-path';
 
 type Mode = 'signin' | 'register' | 'reset' | 'recovery';
 
+function authErrorMessage(error: { message: string; status?: number; code?: string }, action: 'signin' | 'register' | 'reset' | 'recovery') {
+  const message = error.message.toLowerCase();
+  const code = error.code?.toLowerCase() ?? '';
+  if (code === 'over_email_send_rate_limit' || message.includes('email rate limit')) {
+    return 'Supabase has temporarily blocked confirmation emails because this project reached its email limit. Stop retrying for now; configure custom SMTP in Supabase Auth, then try again.';
+  }
+  if (code === 'email_address_not_authorized' || message.includes('email address not authorized')) {
+    return 'Supabase’s built-in mailer only sends to authorized team addresses. Configure custom SMTP in Supabase Auth to send confirmation and reset emails to customers.';
+  }
+  if (error.status === 429 || message.includes('rate limit') || message.includes('too many')) {
+    return action === 'signin'
+      ? 'Supabase temporarily rate-limited sign-in attempts. Wait a few minutes before trying again.'
+      : 'Supabase temporarily rate-limited this request. Wait before retrying; repeated clicks will extend the problem.';
+  }
+  if (message.includes('already registered') || message.includes('user already exists')) {
+    return 'An account may already exist for this email. Try signing in or use “Forgot password?”';
+  }
+  if (message.includes('not confirmed')) {
+    return 'This account exists but its email is not confirmed. Check your inbox for the confirmation link.';
+  }
+  if (action === 'signin' && (message.includes('invalid login credentials') || message.includes('invalid credentials'))) {
+    return 'Email or password is incorrect. Check both fields or use “Forgot password?”';
+  }
+  return error.message || 'Authentication failed. Please try again.';
+}
+
 export function AuthForm({ initialMode = 'signin', notice = '', redirectTo = '/' }: { initialMode?: Mode; notice?: string; redirectTo?: string }) {
   const [mode, setMode] = useState<Mode>(initialMode);
   const [pending, setPending] = useState(false);
@@ -25,10 +51,7 @@ export function AuthForm({ initialMode = 'signin', notice = '', redirectTo = '/'
         if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? 'Check your details.');
         const { data: authData, error: authError } = await supabase.auth.signInWithPassword(parsed.data);
         if (authError) {
-          const message = authError.message.toLowerCase();
-          if (message.includes('not confirmed')) throw new Error('Confirm your email using the link we sent, then sign in again.');
-          if (message.includes('rate limit') || message.includes('too many')) throw new Error('Too many sign-in attempts. Wait a few minutes and try again.');
-          throw new Error('Email or password is incorrect. Check both fields and try again.');
+          throw new Error(authErrorMessage(authError, 'signin'));
         }
         if (!authData.session) throw new Error('Supabase did not create a session. Check the project’s email confirmation settings.');
         const { data: profile } = await supabase
@@ -43,20 +66,20 @@ export function AuthForm({ initialMode = 'signin', notice = '', redirectTo = '/'
         if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? 'Check your details.');
         const siteUrl = window.location.origin;
         const { data, error: authError } = await supabase.auth.signUp({ email: parsed.data.email, password: parsed.data.password, options: { data: { full_name: parsed.data.name, phone: parsed.data.phone }, emailRedirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(safeReturnPath(redirectTo) ?? '/account')}` } });
-        if (authError) throw new Error('We could not create your account. Check your details or try signing in.');
+        if (authError) throw new Error(authErrorMessage(authError, 'register'));
         if (data.session) { router.replace(safeReturnPath(redirectTo) ?? '/'); router.refresh(); return; }
         setMessage('Check your email for a confirmation link to activate your account.');
       } else if (mode === 'reset') {
         const parsed = resetSchema.safeParse({ email: form.get('email') });
         if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? 'Enter a valid email.');
         const { error: authError } = await supabase.auth.resetPasswordForEmail(parsed.data.email, { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/account?mode=recovery')}` });
-        if (authError) throw new Error('We could not send a reset email right now. Please try again shortly.');
+        if (authError) throw new Error(authErrorMessage(authError, 'reset'));
         setMessage('If that email has an account, a password reset link is on its way.');
       } else {
         const parsed = passwordUpdateSchema.safeParse({ password: form.get('password'), confirmPassword: form.get('confirmPassword') });
         if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? 'Check the new password.');
         const { error: authError } = await supabase.auth.updateUser({ password: parsed.data.password });
-        if (authError) throw new Error('We could not update your password. Please request a new reset link.');
+        if (authError) throw new Error(authErrorMessage(authError, 'recovery'));
         router.replace('/account'); router.refresh(); return;
       }
     } catch (caught) { setError(caught instanceof Error ? caught.message : 'Authentication failed.'); }
